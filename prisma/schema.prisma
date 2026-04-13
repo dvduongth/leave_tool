@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  HEAD
+  ADMIN
+}
+
+enum ShiftType {
+  A
+  B
+  C
+}
+
+enum LeaveStatus {
+  DRAFT
+  PENDING_MANAGER
+  PENDING_HEAD
+  APPROVED
+  REJECTED
+  CANCEL_PENDING
+  CANCELLED
+}
+
+enum ApprovalAction {
+  APPROVED
+  REJECTED
+  AUTO_APPROVED
+}
+
+enum RecordStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FlexType {
+  DEFICIT
+  MAKEUP
+}
+
+enum FlexMonthStatus {
+  OPEN
+  SETTLED
+}
+
+model Department {
+  id        String     @id @default(uuid())
+  name      String
+  headId    String?    @map("head_id")
+  head      Employee?  @relation("DepartmentHead", fields: [headId], references: [id])
+  employees Employee[] @relation("DepartmentEmployees")
+
+  @@map("departments")
+}
+
+model Employee {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String
+  departmentId String    @map("department_id")
+  managerId    String?   @map("manager_id")
+  role         Role      @default(EMPLOYEE)
+  workShift    ShiftType @default(A) @map("work_shift")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  department         Department             @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  manager            Employee?              @relation("ManagerSubordinates", fields: [managerId], references: [id])
+  subordinates       Employee[]             @relation("ManagerSubordinates")
+  headOfDepartments  Department[]           @relation("DepartmentHead")
+  leaveBalances      LeaveBalance[]
+  leaveRequests      LeaveRequest[]
+  leaveHistoryActor  LeaveRequestHistory[]  @relation("HistoryActor")
+  otRecords          OTRecord[]
+  flexTimeRecords    FlexTimeRecord[]
+  flexTimeApprovals  FlexTimeRecord[]       @relation("FlexApprover")
+  flexMonthlySummary FlexTimeMonthlySummary[]
+  notifications      Notification[]
+
+  @@map("employees")
+}
+
+model WorkShift {
+  id           ShiftType @id
+  label        String
+  weekdayStart String    @map("weekday_start")
+  weekdayEnd   String    @map("weekday_end")
+  fridayStart  String    @map("friday_start")
+  fridayEnd    String    @map("friday_end")
+  lunchStart   String    @default("12:00") @map("lunch_start")
+  lunchEnd     String    @default("13:00") @map("lunch_end")
+
+  @@map("work_shifts")
+}
+
+model LeaveBalance {
+  id            String   @id @default(uuid())
+  employeeId    String   @map("employee_id")
+  cycleYear     Int      @map("cycle_year")
+  cycleStart    DateTime @map("cycle_start") @db.Date
+  cycleEnd      DateTime @map("cycle_end") @db.Date
+  totalHours    Float    @default(96.0) @map("total_hours")
+  usedHours     Float    @default(0) @map("used_hours")
+  pendingHours  Float    @default(0) @map("pending_hours")
+  graceDeadline DateTime @map("grace_deadline") @db.Date
+
+  employee      Employee       @relation(fields: [employeeId], references: [id])
+  leaveRequests LeaveRequest[]
+
+  @@unique([employeeId, cycleYear])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id              String          @id @default(uuid())
+  employeeId      String          @map("employee_id")
+  balanceId       String?         @map("balance_id")
+  startDate       DateTime        @map("start_date") @db.Date
+  startTime       String          @map("start_time")
+  endDate         DateTime        @map("end_date") @db.Date
+  endTime         String          @map("end_time")
+  totalHours      Float           @map("total_hours")
+  reason          String?
+  status          LeaveStatus     @default(DRAFT)
+  isAutoDeduct    Boolean         @default(false) @map("is_auto_deduct")
+  managerAction   ApprovalAction? @map("manager_action")
+  managerComment  String?         @map("manager_comment")
+  managerActionAt DateTime?       @map("manager_action_at")
+  headAction      ApprovalAction? @map("head_action")
+  headComment     String?         @map("head_comment")
+  headActionAt    DateTime?       @map("head_action_at")
+  cancelledAt     DateTime?       @map("cancelled_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  employee Employee              @relation(fields: [employeeId], references: [id])
+  balance  LeaveBalance?         @relation(fields: [balanceId], references: [id])
+  history  LeaveRequestHistory[]
+
+  @@index([employeeId, status])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+model LeaveRequestHistory {
+  id        String   @id @default(uuid())
+  requestId String   @map("request_id")
+  action    String
+  actorId   String   @map("actor_id")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  request LeaveRequest @relation(fields: [requestId], references: [id])
+  actor   Employee     @relation("HistoryActor", fields: [actorId], references: [id])
+
+  @@index([requestId])
+  @@map("leave_request_history")
+}
+
+model OTRecord {
+  id         String       @id @default(uuid())
+  employeeId String       @map("employee_id")
+  date       DateTime     @db.Date
+  otStart    String       @map("ot_start")
+  otEnd      String       @map("ot_end")
+  otMinutes  Int          @map("ot_minutes")
+  note       String?
+  status     RecordStatus @default(PENDING)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId, date])
+  @@map("ot_records")
+}
+
+model FlexTimeRecord {
+  id         String       @id @default(uuid())
+  employeeId String       @map("employee_id")
+  type       FlexType
+  date       DateTime     @db.Date
+  minutes    Int
+  reason     String?
+  status     RecordStatus @default(PENDING)
+  approvedBy String?      @map("approved_by")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  employee Employee  @relation(fields: [employeeId], references: [id])
+  approver Employee? @relation("FlexApprover", fields: [approvedBy], references: [id])
+
+  @@index([employeeId, date])
+  @@map("flex_time_records")
+}
+
+model FlexTimeMonthlySummary {
+  id              String          @id @default(uuid())
+  employeeId      String          @map("employee_id")
+  yearMonth       String          @map("year_month")
+  totalDeficit    Int             @default(0) @map("total_deficit")
+  totalMakeup     Int             @default(0) @map("total_makeup")
+  remaining       Int             @default(0)
+  autoDeductHours Float?          @map("auto_deduct_hours")
+  status          FlexMonthStatus @default(OPEN)
+  settledAt       DateTime?       @map("settled_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, yearMonth])
+  @@map("flex_time_monthly_summaries")
+}
+
+model Holiday {
+  id   String   @id @default(uuid())
+  date DateTime @db.Date
+  name String
+  year Int
+
+  @@unique([date])
+  @@map("holidays")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user Employee @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@map("notifications")
+}
