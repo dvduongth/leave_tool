@@ -9,15 +9,18 @@ import { useLocale, useT } from "@/lib/i18n/provider";
  * Wraps static help content and auto-translates all text nodes when the
  * active locale differs from the source (Vietnamese).
  *
- * Strategy:
- * - On mount / locale change, walk children text nodes, collect translatable
- *   strings, POST in batches to /api/translate, swap textContent in place.
- * - Results cached in sessionStorage keyed by `help-<locale>-v1` so
- *   revisiting the page costs zero API calls.
- * - Original text stashed on each node (_orig) so we can restore instantly.
+ * Handling dynamic DOM (e.g. Tabs that mount content lazily):
+ * - A MutationObserver watches the container for added nodes.
+ * - When a new subtree appears (e.g. user switches tab), we walk its text
+ *   nodes, apply any already-cached translations instantly, then fire a
+ *   single batched API request for any uncached strings.
+ *
+ * Caching:
+ * - Per-locale `Record<sourceText, translatedText>` stored in localStorage
+ *   under `help-<locale>-v2`. Survives page reloads. "Retranslate" clears it.
  */
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const BATCH_SIZE = 40; // DeepL free tier accepts up to 50 per call
 const SOURCE_LOCALE = "vi";
 
@@ -34,7 +37,15 @@ function isTranslatable(text: string): boolean {
   return true;
 }
 
-function collectTextNodes(root: HTMLElement): TranslatableNode[] {
+function collectTextNodes(root: Node): TranslatableNode[] {
+  // Only element nodes can host a TreeWalker; for text nodes, handle directly.
+  if (root.nodeType === Node.TEXT_NODE) {
+    const t = root.nodeValue ?? "";
+    return isTranslatable(t)
+      ? [{ node: root as Text, text: t.trim() }]
+      : [];
+  }
+  if (!(root instanceof Element) && !(root instanceof Document)) return [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (node) => {
       const t = node.nodeValue ?? "";
@@ -58,76 +69,92 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return res;
 }
 
+type Status = "idle" | "translating" | "translated" | "error" | "original";
+
 export function HelpTranslator({ children }: { children: React.ReactNode }) {
   const { locale } = useLocale();
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const originalMapRef = useRef<Map<Text, string>>(new Map());
-  const [status, setStatus] = useState<
-    "idle" | "translating" | "translated" | "error" | "original"
-  >("idle");
+  const cacheRef = useRef<Record<string, string>>({});
+  const inFlightRef = useRef<Set<string>>(new Set());
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingNodesRef = useRef<TranslatableNode[]>([]);
+  const showingOriginalRef = useRef(false);
+  const [status, setStatus] = useState<Status>("idle");
 
-  const applyTranslations = (
-    nodes: TranslatableNode[],
-    translations: string[]
-  ) => {
-    nodes.forEach((n, i) => {
-      const t = translations[i];
-      if (!t) return;
-      // Stash original (preserving surrounding whitespace)
-      if (!originalMapRef.current.has(n.node)) {
-        originalMapRef.current.set(n.node, n.node.nodeValue ?? "");
-      }
-      const orig = n.node.nodeValue ?? "";
-      const leading = orig.match(/^\s*/)?.[0] ?? "";
-      const trailing = orig.match(/\s*$/)?.[0] ?? "";
-      n.node.nodeValue = leading + t + trailing;
-    });
+  const cacheKey = () => `help-${locale}-${CACHE_VERSION}`;
+
+  const loadCache = (): Record<string, string> => {
+    try {
+      const raw = localStorage.getItem(cacheKey());
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveCache = () => {
+    try {
+      localStorage.setItem(cacheKey(), JSON.stringify(cacheRef.current));
+    } catch {
+      /* storage full — skip */
+    }
+  };
+
+  const applyNode = (n: TranslatableNode, translation: string) => {
+    if (showingOriginalRef.current) return;
+    if (!originalMapRef.current.has(n.node)) {
+      originalMapRef.current.set(n.node, n.node.nodeValue ?? "");
+    }
+    const orig = n.node.nodeValue ?? "";
+    const leading = orig.match(/^\s*/)?.[0] ?? "";
+    const trailing = orig.match(/\s*$/)?.[0] ?? "";
+    // Only overwrite if the node still contains the original source.
+    if (orig.trim() === n.text) {
+      n.node.nodeValue = leading + translation + trailing;
+    }
   };
 
   const restoreOriginal = () => {
+    showingOriginalRef.current = true;
     originalMapRef.current.forEach((orig, node) => {
       node.nodeValue = orig;
     });
     setStatus("original");
   };
 
-  const translate = async (force = false) => {
-    const root = containerRef.current;
-    if (!root) return;
-    if (locale === SOURCE_LOCALE) {
-      restoreOriginal();
-      setStatus("idle");
-      return;
-    }
+  const flushPending = async () => {
+    pendingTimerRef.current = null;
+    const nodes = pendingNodesRef.current;
+    pendingNodesRef.current = [];
+    if (locale === SOURCE_LOCALE || nodes.length === 0) return;
 
-    const cacheKey = `help-${locale}-${CACHE_VERSION}`;
-    const nodes = collectTextNodes(root);
-    if (nodes.length === 0) return;
-
-    // Try cache
-    if (!force) {
-      try {
-        const raw = sessionStorage.getItem(cacheKey);
-        if (raw) {
-          const cached = JSON.parse(raw) as Record<string, string>;
-          const translations = nodes.map((n) => cached[n.text] ?? n.text);
-          applyTranslations(nodes, translations);
-          setStatus("translated");
-          return;
-        }
-      } catch {
-        /* ignore cache errors */
+    // 1. Apply cached translations immediately
+    const uncachedTexts = new Set<string>();
+    for (const n of nodes) {
+      const cached = cacheRef.current[n.text];
+      if (cached) {
+        applyNode(n, cached);
+      } else if (!inFlightRef.current.has(n.text)) {
+        uncachedTexts.add(n.text);
       }
     }
 
-    setStatus("translating");
-    try {
-      // Deduplicate
-      const uniqueTexts = Array.from(new Set(nodes.map((n) => n.text)));
-      const map: Record<string, string> = {};
+    if (uncachedTexts.size === 0) {
+      if (status !== "translated" && !showingOriginalRef.current) {
+        setStatus("translated");
+      }
+      return;
+    }
 
-      for (const batch of chunk(uniqueTexts, BATCH_SIZE)) {
+    // 2. Fetch uncached
+    const toFetch = Array.from(uncachedTexts);
+    toFetch.forEach((t) => inFlightRef.current.add(t));
+    setStatus("translating");
+
+    try {
+      for (const batch of chunk(toFetch, BATCH_SIZE)) {
         const res = await fetch("/api/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -143,51 +170,116 @@ export function HelpTranslator({ children }: { children: React.ReactNode }) {
         }
         const data = (await res.json()) as { translatedArray: string[] };
         batch.forEach((src, i) => {
-          map[src] = data.translatedArray[i] ?? src;
+          const tr = data.translatedArray[i] ?? src;
+          cacheRef.current[src] = tr;
         });
       }
+      saveCache();
 
-      try {
-        sessionStorage.setItem(cacheKey, JSON.stringify(map));
-      } catch {
-        /* storage full — skip */
+      // 3. Apply to every node we've seen so far that matches
+      const root = containerRef.current;
+      if (root) {
+        for (const n of collectTextNodes(root)) {
+          const tr = cacheRef.current[n.text];
+          if (tr) applyNode(n, tr);
+        }
       }
-
-      applyTranslations(
-        nodes,
-        nodes.map((n) => map[n.text] ?? n.text)
-      );
-      setStatus("translated");
+      setStatus(showingOriginalRef.current ? "original" : "translated");
     } catch (err) {
       setStatus("error");
-      toast.error(
-        err instanceof Error ? err.message : "Translation failed"
-      );
+      toast.error(err instanceof Error ? err.message : "Translation failed");
+    } finally {
+      toFetch.forEach((t) => inFlightRef.current.delete(t));
     }
   };
 
-  // Run on mount & whenever locale changes
-  useEffect(() => {
-    restoreOriginal();
-    originalMapRef.current.clear();
-    if (locale !== SOURCE_LOCALE) {
-      translate(false);
-    } else {
+  const scheduleFlush = () => {
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    pendingTimerRef.current = setTimeout(flushPending, 80);
+  };
+
+  const queueNodes = (nodes: TranslatableNode[]) => {
+    if (nodes.length === 0) return;
+    pendingNodesRef.current.push(...nodes);
+    scheduleFlush();
+  };
+
+  // Full (re)translate — called on locale change, mount, and retranslate.
+  const translateAll = () => {
+    const root = containerRef.current;
+    if (!root) return;
+    showingOriginalRef.current = false;
+    if (locale === SOURCE_LOCALE) {
       setStatus("idle");
+      return;
     }
+    cacheRef.current = loadCache();
+    queueNodes(collectTextNodes(root));
+  };
+
+  // Mount + locale changes
+  useEffect(() => {
+    // Restore any nodes back to source before switching
+    originalMapRef.current.forEach((orig, node) => {
+      node.nodeValue = orig;
+    });
+    originalMapRef.current.clear();
+    cacheRef.current = {};
+    inFlightRef.current.clear();
+    pendingNodesRef.current = [];
+    if (pendingTimerRef.current) {
+      clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+    translateAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale]);
 
+  // Observe new DOM nodes (tab switches, dynamic content)
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const observer = new MutationObserver((mutations) => {
+      if (locale === SOURCE_LOCALE || showingOriginalRef.current) return;
+      const newNodes: TranslatableNode[] = [];
+      for (const m of mutations) {
+        m.addedNodes.forEach((added) => {
+          newNodes.push(...collectTextNodes(added));
+        });
+      }
+      if (newNodes.length > 0) queueNodes(newNodes);
+    });
+
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [locale]);
+
   const retranslate = () => {
-    const cacheKey = `help-${locale}-${CACHE_VERSION}`;
     try {
-      sessionStorage.removeItem(cacheKey);
+      localStorage.removeItem(cacheKey());
     } catch {
       /* ignore */
     }
-    restoreOriginal();
+    originalMapRef.current.forEach((orig, node) => {
+      node.nodeValue = orig;
+    });
     originalMapRef.current.clear();
-    translate(true);
+    cacheRef.current = {};
+    inFlightRef.current.clear();
+    showingOriginalRef.current = false;
+    translateAll();
+  };
+
+  const reapply = () => {
+    showingOriginalRef.current = false;
+    const root = containerRef.current;
+    if (!root) return;
+    for (const n of collectTextNodes(root)) {
+      const tr = cacheRef.current[n.text];
+      if (tr) applyNode(n, tr);
+    }
+    setStatus("translated");
   };
 
   return (
@@ -232,7 +324,7 @@ export function HelpTranslator({ children }: { children: React.ReactNode }) {
             {status === "original" && (
               <button
                 type="button"
-                onClick={() => translate(false)}
+                onClick={reapply}
                 className="text-primary hover:underline"
               >
                 {t("help.translator.reapply")}
