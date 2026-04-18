@@ -31,6 +31,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useT } from "@/lib/i18n/provider";
+import {
+  calculateSeniorityBonusHours,
+  yearsBetween,
+} from "@/lib/seniority";
 
 interface Employee {
   id: string;
@@ -40,6 +44,7 @@ interface Employee {
   workShift: string;
   departmentId: string;
   managerId: string | null;
+  joinDate: string | null;
   department: { id: string; name: string };
   manager: { id: string; name: string } | null;
 }
@@ -74,6 +79,7 @@ export default function AdminEmployeesPage() {
   const [formShift, setFormShift] = useState("A");
   const [formDepartment, setFormDepartment] = useState("");
   const [formManager, setFormManager] = useState("");
+  const [formJoinDate, setFormJoinDate] = useState("");
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -133,6 +139,7 @@ export default function AdminEmployeesPage() {
     setFormShift("A");
     setFormDepartment("");
     setFormManager("");
+    setFormJoinDate("");
     setDialogOpen(true);
   }
 
@@ -145,6 +152,7 @@ export default function AdminEmployeesPage() {
     setFormShift(emp.workShift);
     setFormDepartment(emp.departmentId);
     setFormManager(emp.managerId || "");
+    setFormJoinDate(emp.joinDate ? emp.joinDate.slice(0, 10) : "");
     setDialogOpen(true);
   }
 
@@ -162,6 +170,7 @@ export default function AdminEmployeesPage() {
           workShift: formShift,
           departmentId: formDepartment,
           managerId: formManager || null,
+          joinDate: formJoinDate || null,
         };
         if (formPassword) body.password = formPassword;
 
@@ -205,6 +214,7 @@ export default function AdminEmployeesPage() {
             workShift: formShift,
             departmentId: formDepartment,
             managerId: formManager || null,
+            joinDate: formJoinDate || null,
           }),
         });
         if (res.ok) {
@@ -283,6 +293,8 @@ export default function AdminEmployeesPage() {
               <TableHead>{t("admin.employees.colDepartment")}</TableHead>
               <TableHead>{t("admin.employees.colShift")}</TableHead>
               <TableHead>{t("admin.employees.colManager")}</TableHead>
+              <TableHead>{t("admin.employees.colJoinDate")}</TableHead>
+              <TableHead>{t("admin.employees.colSeniority")}</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -290,7 +302,7 @@ export default function AdminEmployeesPage() {
             {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={9}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t("common.loading")}
@@ -299,7 +311,7 @@ export default function AdminEmployeesPage() {
             ) : employees.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={9}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {t("admin.employees.empty")}
@@ -318,6 +330,43 @@ export default function AdminEmployeesPage() {
                   <TableCell>{emp.department?.name ?? "-"}</TableCell>
                   <TableCell>{emp.workShift}</TableCell>
                   <TableCell>{emp.manager?.name ?? "-"}</TableCell>
+                  <TableCell>
+                    {emp.joinDate
+                      ? new Date(emp.joinDate).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {emp.joinDate ? (
+                      <span
+                        title={t("admin.employees.seniorityHint")
+                          .replace(
+                            "{years}",
+                            String(
+                              yearsBetween(new Date(emp.joinDate), new Date())
+                            )
+                          )
+                          .replace(
+                            "{bonus}",
+                            String(
+                              calculateSeniorityBonusHours(
+                                new Date(emp.joinDate),
+                                new Date()
+                              )
+                            )
+                          )}
+                      >
+                        {yearsBetween(new Date(emp.joinDate), new Date())}y
+                        {" / +"}
+                        {calculateSeniorityBonusHours(
+                          new Date(emp.joinDate),
+                          new Date()
+                        )}
+                        h
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Pencil className="size-4 text-muted-foreground" />
                   </TableCell>
@@ -418,6 +467,20 @@ export default function AdminEmployeesPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-joindate">
+                {t("admin.employees.joinDate")}
+              </Label>
+              <Input
+                id="emp-joindate"
+                type="date"
+                value={formJoinDate}
+                onChange={(e) => setFormJoinDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("admin.employees.joinDateHint")}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>{t("admin.employees.managerOptional")}</Label>

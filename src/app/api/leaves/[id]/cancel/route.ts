@@ -1,8 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { restoreLeave } from "@/lib/leave-calculator";
 import { createNotification } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
-import { LeaveStatus } from "@/generated/prisma";
+import { LeaveStatus, Role } from "@/generated/prisma";
 
 export async function POST(
   _request: Request,
@@ -133,7 +132,8 @@ export async function POST(
       return Response.json(updated);
     }
 
-    // APPROVED: set to CANCEL_PENDING (needs re-approval)
+    // APPROVED: set to CANCEL_PENDING (needs approver to confirm).
+    // Balance stays deducted until /approve-cancel restores it.
     if (oldStatus === LeaveStatus.APPROVED) {
       const updated = await prisma.leaveRequest.update({
         where: { id },
@@ -146,11 +146,6 @@ export async function POST(
         },
       });
 
-      // Restore balance (was already deducted on approval)
-      if (leave.balanceId) {
-        await restoreLeave(leave.employeeId, leave.totalHours, leave.balanceId);
-      }
-
       await prisma.leaveRequestHistory.create({
         data: {
           requestId: id,
@@ -161,27 +156,35 @@ export async function POST(
         },
       });
 
-      // Notify manager and/or head
-      if (leave.employee.managerId) {
+      // Notify approvers: manager if exists, else head; fall back to admins.
+      const notified = new Set<string>();
+      const notify = async (recipientId: string) => {
+        if (recipientId === leave.employeeId || notified.has(recipientId))
+          return;
+        notified.add(recipientId);
         await createNotification(
-          leave.employee.managerId,
+          recipientId,
           "Leave cancellation requested",
           `${leave.employee.name} requested to cancel their approved leave for ${leave.totalHours}h`,
           `/leaves/${id}`
         );
-      }
+      };
+
+      if (leave.employee.managerId) await notify(leave.employee.managerId);
 
       const department = await prisma.department.findUnique({
         where: { id: leave.employee.departmentId },
         select: { headId: true },
       });
-      if (department?.headId) {
-        await createNotification(
-          department.headId,
-          "Leave cancellation requested",
-          `${leave.employee.name} requested to cancel their approved leave for ${leave.totalHours}h`,
-          `/leaves/${id}`
-        );
+      if (department?.headId) await notify(department.headId);
+
+      // If requester is the department head / admin with no manager, also notify admins
+      if (!leave.employee.managerId && (!department?.headId || department.headId === leave.employeeId)) {
+        const admins = await prisma.employee.findMany({
+          where: { role: Role.ADMIN, id: { not: leave.employeeId } },
+          select: { id: true },
+        });
+        for (const a of admins) await notify(a.id);
       }
 
       return Response.json(updated);

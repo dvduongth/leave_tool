@@ -132,14 +132,17 @@ export async function deductLeave(
 
 /**
  * Restores leave hours to a specific balance (e.g., on cancellation).
+ * Clamps `usedHours` at 0 to prevent negative values from double-restore bugs.
  */
 export async function restoreLeave(
-  employeeId: string,
+  _employeeId: string,
   hours: number,
   balanceId: string
 ): Promise<void> {
-  await prisma.leaveBalance.update({
-    where: { id: balanceId },
-    data: { usedHours: { decrement: hours } },
-  });
+  // Use raw SQL to atomically clamp at 0: usedHours = GREATEST(0, usedHours - hours)
+  await prisma.$executeRaw`
+    UPDATE leave_balances
+    SET used_hours = GREATEST(0, used_hours - ${hours})
+    WHERE id = ${balanceId}
+  `;
 }

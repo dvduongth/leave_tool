@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole, getCurrentUser } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
+import { totalAnnualLeaveHours } from "@/lib/seniority";
+import { parseDateInput } from "@/lib/date-utils";
 
 export async function GET(
   _request: NextRequest,
@@ -43,8 +45,16 @@ export async function PATCH(
     await requireRole("ADMIN");
     const { id } = await params;
     const body = await request.json();
-    const { name, email, password, role, workShift, departmentId, managerId } =
-      body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      workShift,
+      departmentId,
+      managerId,
+      joinDate,
+    } = body;
 
     const existing = await prisma.employee.findUnique({ where: { id } });
     if (!existing) {
@@ -73,6 +83,13 @@ export async function PATCH(
       data.password = await bcrypt.hash(password, 10);
     }
 
+    let joinDateChanged = false;
+    if (joinDate !== undefined) {
+      const parsed = joinDate === null || joinDate === "" ? null : parseDateInput(joinDate);
+      data.joinDate = parsed;
+      joinDateChanged = true;
+    }
+
     const updated = await prisma.employee.update({
       where: { id },
       data,
@@ -82,6 +99,26 @@ export async function PATCH(
         leaveBalances: { orderBy: { cycleYear: "desc" } },
       },
     });
+
+    // Recompute totalHours on active (non-ended) cycles when joinDate changes.
+    if (joinDateChanged) {
+      const today = new Date();
+      const activeBalances = await prisma.leaveBalance.findMany({
+        where: {
+          employeeId: id,
+          cycleEnd: { gte: today },
+        },
+      });
+      for (const b of activeBalances) {
+        const newTotal = totalAnnualLeaveHours(updated.joinDate, b.cycleStart);
+        if (newTotal !== b.totalHours) {
+          await prisma.leaveBalance.update({
+            where: { id: b.id },
+            data: { totalHours: newTotal },
+          });
+        }
+      }
+    }
 
     return Response.json(updated);
   } catch (error: unknown) {

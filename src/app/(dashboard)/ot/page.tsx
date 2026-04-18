@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Clock } from "lucide-react";
+import { Plus, CalendarIcon, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -31,6 +30,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useT } from "@/lib/i18n/provider";
@@ -43,6 +48,7 @@ interface OTRecord {
   otMinutes: number;
   status: string;
   note: string | null;
+  employee?: { id: string; name: string };
 }
 
 function getStatusVariant(status: string) {
@@ -58,6 +64,11 @@ function getStatusVariant(status: string) {
 
 export default function OTPage() {
   const t = useT();
+  const { data: session } = useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  const isApprover = role === "MANAGER" || role === "HEAD" || role === "ADMIN";
+
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -91,7 +102,17 @@ export default function OTPage() {
     fetchRecords();
   }, [fetchRecords]);
 
-  const totalMinutes = records.reduce((sum, r) => sum + r.otMinutes, 0);
+  const myRecords = records.filter(
+    (r) => !r.employee || r.employee.id === userId
+  );
+  const pendingTeamRecords = records.filter(
+    (r) =>
+      r.status === "PENDING" &&
+      r.employee &&
+      r.employee.id !== userId
+  );
+
+  const totalMinutes = myRecords.reduce((sum, r) => sum + r.otMinutes, 0);
   const totalHours = Math.floor(totalMinutes / 60);
   const remainingMinutes = totalMinutes % 60;
 
@@ -107,11 +128,13 @@ export default function OTPage() {
     }
     setSubmitting(true);
     try {
+      // Send date as YYYY-MM-DD to avoid timezone shift
+      const dateStr = `${formDate.getFullYear()}-${String(formDate.getMonth() + 1).padStart(2, "0")}-${String(formDate.getDate()).padStart(2, "0")}`;
       const res = await fetch("/api/ot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: formDate.toISOString(),
+          date: dateStr,
           otStart: formStart,
           otEnd: formEnd,
           note: formNote || null,
@@ -133,6 +156,32 @@ export default function OTPage() {
       toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleApproval(
+    recordId: string,
+    action: "approve" | "reject"
+  ) {
+    try {
+      const res = await fetch(`/api/ot/${recordId}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
+      });
+      if (res.ok) {
+        toast.success(
+          action === "approve"
+            ? t("ot.toastApproved")
+            : t("ot.toastRejected")
+        );
+        fetchRecords();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t("ot.errActionFailed"));
+      }
+    } catch {
+      toast.error(t("common.unexpectedError"));
     }
   }
 
@@ -172,62 +221,155 @@ export default function OTPage() {
         </Card>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("ot.colDate")}</TableHead>
-              <TableHead>{t("ot.colOtStart")}</TableHead>
-              <TableHead>{t("ot.colOtEnd")}</TableHead>
-              <TableHead className="text-right">{t("ot.colMinutes")}</TableHead>
-              <TableHead>{t("ot.colStatus")}</TableHead>
-              <TableHead>{t("ot.colNote")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {t("common.loading")}
-                </TableCell>
-              </TableRow>
-            ) : records.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {t("ot.empty")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              records.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    {format(new Date(record.date), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>{record.otStart}</TableCell>
-                  <TableCell>{record.otEnd}</TableCell>
-                  <TableCell className="text-right">
-                    {record.otMinutes}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(record.status)}>
-                      {t(`common.status.${record.status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                    {record.note || "-"}
-                  </TableCell>
+      <Tabs defaultValue="mine">
+        <TabsList>
+          <TabsTrigger value="mine">{t("ot.tabMine")}</TabsTrigger>
+          {isApprover && (
+            <TabsTrigger value="pending">
+              {t("ot.tabPending").replace(
+                "{count}",
+                String(pendingTeamRecords.length)
+              )}
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="mine">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("ot.colDate")}</TableHead>
+                  <TableHead>{t("ot.colOtStart")}</TableHead>
+                  <TableHead>{t("ot.colOtEnd")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("ot.colMinutes")}
+                  </TableHead>
+                  <TableHead>{t("ot.colStatus")}</TableHead>
+                  <TableHead>{t("ot.colNote")}</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      {t("common.loading")}
+                    </TableCell>
+                  </TableRow>
+                ) : myRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      {t("ot.empty")}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  myRecords.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>
+                        {format(new Date(record.date), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>{record.otStart}</TableCell>
+                      <TableCell>{record.otEnd}</TableCell>
+                      <TableCell className="text-right">
+                        {record.otMinutes}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(record.status)}>
+                          {t(`common.status.${record.status}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                        {record.note || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {isApprover && (
+          <TabsContent value="pending">
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("ot.colEmployee")}</TableHead>
+                    <TableHead>{t("ot.colDate")}</TableHead>
+                    <TableHead>{t("ot.colOtStart")}</TableHead>
+                    <TableHead>{t("ot.colOtEnd")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("ot.colMinutes")}
+                    </TableHead>
+                    <TableHead>{t("ot.colNote")}</TableHead>
+                    <TableHead>{t("ot.colActions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingTeamRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        {t("ot.emptyPending")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    pendingTeamRecords.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-medium">
+                          {record.employee?.name ?? "-"}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(record.date), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>{record.otStart}</TableCell>
+                        <TableCell>{record.otEnd}</TableCell>
+                        <TableCell className="text-right">
+                          {record.otMinutes}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                          {record.note || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleApproval(record.id, "approve")
+                              }
+                            >
+                              <CheckCircle className="size-4 text-green-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleApproval(record.id, "reject")
+                              }
+                            >
+                              <XCircle className="size-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Record OT Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
+import { totalAnnualLeaveHours } from "@/lib/seniority";
+import { parseDateInput } from "@/lib/date-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,8 +40,16 @@ export async function POST(request: NextRequest) {
   try {
     await requireRole("ADMIN");
     const body = await request.json();
-    const { name, email, password, role, workShift, departmentId, managerId } =
-      body;
+    const {
+      name,
+      email,
+      password,
+      role,
+      workShift,
+      departmentId,
+      managerId,
+      joinDate,
+    } = body;
 
     if (!name || !email || !password || !role || !workShift || !departmentId) {
       return Response.json(
@@ -68,6 +78,9 @@ export async function POST(request: NextRequest) {
     const cycleEnd = new Date(cycleYear + 1, 4, 31); // May 31
     const graceDeadline = new Date(cycleYear + 1, 6, 31); // July 31
 
+    const parsedJoinDate = joinDate ? parseDateInput(joinDate) : null;
+    const totalHours = totalAnnualLeaveHours(parsedJoinDate, cycleStart);
+
     const employee = await prisma.employee.create({
       data: {
         name,
@@ -77,12 +90,13 @@ export async function POST(request: NextRequest) {
         workShift,
         departmentId,
         managerId: managerId || null,
+        joinDate: parsedJoinDate,
         leaveBalances: {
           create: {
             cycleYear,
             cycleStart,
             cycleEnd,
-            totalHours: 96,
+            totalHours,
             usedHours: 0,
             pendingHours: 0,
             graceDeadline,

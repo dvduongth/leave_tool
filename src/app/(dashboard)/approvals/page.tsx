@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CheckCircle, XCircle, User, Clock, FileText } from "lucide-react";
+import { CheckCircle, XCircle, User, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -46,32 +46,35 @@ interface PendingLeave {
   };
 }
 
+type RejectMode = "leave" | "cancel";
+
 export default function ApprovalsPage() {
   const t = useT();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
 
   const [leaves, setLeaves] = useState<PendingLeave[]>([]);
+  const [cancelRequests, setCancelRequests] = useState<PendingLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectTargetId, setRejectTargetId] = useState<string | null>(null);
+  const [rejectMode, setRejectMode] = useState<RejectMode>("leave");
   const [rejectComment, setRejectComment] = useState("");
 
   async function fetchPending() {
     setLoading(true);
     try {
-      // Determine which status to fetch based on role
-      let status = "PENDING_MANAGER";
-      if (role === "HEAD" || role === "ADMIN") {
-        status = "PENDING_HEAD";
-      }
+      const status =
+        role === "HEAD" || role === "ADMIN" ? "PENDING_HEAD" : "PENDING_MANAGER";
 
-      const res = await fetch(`/api/leaves?status=${status}&pending=true`);
-      if (res.ok) {
-        const data = await res.json();
-        setLeaves(data);
-      }
+      const [leavesRes, cancelsRes] = await Promise.all([
+        fetch(`/api/leaves?status=${status}&pending=true`),
+        fetch(`/api/leaves?status=CANCEL_PENDING&pending=true`),
+      ]);
+
+      if (leavesRes.ok) setLeaves(await leavesRes.json());
+      if (cancelsRes.ok) setCancelRequests(await cancelsRes.json());
     } finally {
       setLoading(false);
     }
@@ -99,8 +102,27 @@ export default function ApprovalsPage() {
     }
   }
 
-  function openRejectDialog(leaveId: string) {
+  async function handleApproveCancel(leaveId: string) {
+    setProcessingId(leaveId);
+    try {
+      const res = await fetch(`/api/leaves/${leaveId}/approve-cancel`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || t("approvals.errApproveCancel"));
+        return;
+      }
+      toast.success(t("approvals.toastCancelApproved"));
+      setCancelRequests((prev) => prev.filter((l) => l.id !== leaveId));
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
+  function openRejectDialog(leaveId: string, mode: RejectMode) {
     setRejectTargetId(leaveId);
+    setRejectMode(mode);
     setRejectComment("");
     setRejectDialogOpen(true);
   }
@@ -114,7 +136,11 @@ export default function ApprovalsPage() {
 
     setProcessingId(rejectTargetId);
     try {
-      const res = await fetch(`/api/leaves/${rejectTargetId}/reject`, {
+      const endpoint =
+        rejectMode === "cancel"
+          ? `/api/leaves/${rejectTargetId}/reject-cancel`
+          : `/api/leaves/${rejectTargetId}/reject`;
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment: rejectComment }),
@@ -124,8 +150,16 @@ export default function ApprovalsPage() {
         toast.error(err.error || t("approvals.errReject"));
         return;
       }
-      toast.success(t("approvals.toastRejected"));
-      setLeaves((prev) => prev.filter((l) => l.id !== rejectTargetId));
+      toast.success(
+        rejectMode === "cancel"
+          ? t("approvals.toastCancelRejected")
+          : t("approvals.toastRejected")
+      );
+      if (rejectMode === "cancel") {
+        setCancelRequests((prev) => prev.filter((l) => l.id !== rejectTargetId));
+      } else {
+        setLeaves((prev) => prev.filter((l) => l.id !== rejectTargetId));
+      }
       setRejectDialogOpen(false);
       setRejectTargetId(null);
     } finally {
@@ -142,6 +176,112 @@ export default function ApprovalsPage() {
     );
   }
 
+  const renderLeaveCard = (
+    leave: PendingLeave,
+    mode: "leave" | "cancel"
+  ) => (
+    <Card key={leave.id}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {mode === "cancel" ? (
+                <Ban className="size-4 text-amber-600" />
+              ) : (
+                <User className="size-4" />
+              )}
+              {leave.employee.name}
+            </CardTitle>
+            <CardDescription>{leave.employee.email}</CardDescription>
+          </div>
+          <LeaveStatusBadge status={leave.status} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {mode === "cancel" && (
+          <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            {t("approvals.cancelRequestNote")}
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div>
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.start")}
+            </p>
+            <p className="text-sm font-medium">
+              {format(new Date(leave.startDate), "MMM d, yyyy")} {leave.startTime}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.end")}
+            </p>
+            <p className="text-sm font-medium">
+              {format(new Date(leave.endDate), "MMM d, yyyy")} {leave.endTime}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.hours")}
+            </p>
+            <p className="text-sm font-medium">{leave.totalHours}h</p>
+          </div>
+          {leave.employee.remainingBalance !== undefined && (
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {t("approvals.remainingBalance")}
+              </p>
+              <p className="text-sm font-medium">
+                {leave.employee.remainingBalance}h
+              </p>
+            </div>
+          )}
+        </div>
+
+        {leave.reason && (
+          <div>
+            <p className="text-xs text-muted-foreground">
+              {t("approvals.reason")}
+            </p>
+            <p className="mt-1 rounded bg-muted/50 p-2 text-sm">
+              {leave.reason}
+            </p>
+          </div>
+        )}
+
+        <Separator />
+
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="outline"
+            disabled={processingId === leave.id}
+            onClick={() => openRejectDialog(leave.id, mode)}
+          >
+            <XCircle className="size-4" data-icon="inline-start" />
+            {mode === "cancel"
+              ? t("approvals.rejectCancel")
+              : t("common.reject")}
+          </Button>
+          <Button
+            disabled={processingId === leave.id}
+            onClick={() =>
+              mode === "cancel"
+                ? handleApproveCancel(leave.id)
+                : handleApprove(leave.id)
+            }
+          >
+            <CheckCircle className="size-4" data-icon="inline-start" />
+            {mode === "cancel"
+              ? t("approvals.approveCancel")
+              : t("common.approve")}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const nothingPending = leaves.length === 0 && cancelRequests.length === 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -155,91 +295,34 @@ export default function ApprovalsPage() {
         <div className="flex h-48 items-center justify-center text-muted-foreground">
           {t("common.loading")}
         </div>
-      ) : leaves.length === 0 ? (
+      ) : nothingPending ? (
         <Card>
           <CardContent className="flex h-48 items-center justify-center text-muted-foreground">
             {t("approvals.empty")}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {leaves.map((leave) => (
-            <Card key={leave.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="size-4" />
-                      {leave.employee.name}
-                    </CardTitle>
-                    <CardDescription>{leave.employee.email}</CardDescription>
-                  </div>
-                  <LeaveStatusBadge status={leave.status} />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t("approvals.start")}</p>
-                    <p className="text-sm font-medium">
-                      {format(new Date(leave.startDate), "MMM d, yyyy")}{" "}
-                      {leave.startTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t("approvals.end")}</p>
-                    <p className="text-sm font-medium">
-                      {format(new Date(leave.endDate), "MMM d, yyyy")}{" "}
-                      {leave.endTime}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t("approvals.hours")}</p>
-                    <p className="text-sm font-medium">{leave.totalHours}h</p>
-                  </div>
-                  {leave.employee.remainingBalance !== undefined && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        {t("approvals.remainingBalance")}
-                      </p>
-                      <p className="text-sm font-medium">
-                        {leave.employee.remainingBalance}h
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {leave.reason && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t("approvals.reason")}</p>
-                    <p className="mt-1 rounded bg-muted/50 p-2 text-sm">
-                      {leave.reason}
-                    </p>
-                  </div>
-                )}
-
-                <Separator />
-
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="outline"
-                    disabled={processingId === leave.id}
-                    onClick={() => openRejectDialog(leave.id)}
-                  >
-                    <XCircle className="size-4" data-icon="inline-start" />
-                    {t("common.reject")}
-                  </Button>
-                  <Button
-                    disabled={processingId === leave.id}
-                    onClick={() => handleApprove(leave.id)}
-                  >
-                    <CheckCircle className="size-4" data-icon="inline-start" />
-                    {t("common.approve")}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          {leaves.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">
+                {t("approvals.sectionNew")} ({leaves.length})
+              </h2>
+              <div className="grid gap-4">
+                {leaves.map((l) => renderLeaveCard(l, "leave"))}
+              </div>
+            </div>
+          )}
+          {cancelRequests.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">
+                {t("approvals.sectionCancel")} ({cancelRequests.length})
+              </h2>
+              <div className="grid gap-4">
+                {cancelRequests.map((l) => renderLeaveCard(l, "cancel"))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -247,9 +330,15 @@ export default function ApprovalsPage() {
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("approvals.rejectTitle")}</DialogTitle>
+            <DialogTitle>
+              {rejectMode === "cancel"
+                ? t("approvals.rejectCancelTitle")
+                : t("approvals.rejectTitle")}
+            </DialogTitle>
             <DialogDescription>
-              {t("approvals.rejectDesc")}
+              {rejectMode === "cancel"
+                ? t("approvals.rejectCancelDesc")
+                : t("approvals.rejectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

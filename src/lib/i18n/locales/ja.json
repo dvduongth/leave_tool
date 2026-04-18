@@ -230,8 +230,18 @@
     "errRejectReason": "却下理由を入力してください。",
     "errApprove": "承認に失敗しました。",
     "errReject": "却下に失敗しました。",
+    "errApproveCancel": "取消の承認に失敗しました。",
     "toastApproved": "申請を承認しました。",
-    "toastRejected": "申請を却下しました。"
+    "toastRejected": "申請を却下しました。",
+    "toastCancelApproved": "取消を承認しました。",
+    "toastCancelRejected": "取消を却下しました。休暇は承認済のままです。",
+    "sectionNew": "新規休暇申請",
+    "sectionCancel": "取消申請",
+    "approveCancel": "取消を承認",
+    "rejectCancel": "取消を却下",
+    "rejectCancelTitle": "取消申請を却下",
+    "rejectCancelDesc": "休暇は承認済のままとなります。従業員に通知されます。",
+    "cancelRequestNote": "従業員がこの休暇の取消を申請しました。承認すると差引済の残高が戻ります。"
   },
   "ot": {
     "title": "残業記録",
@@ -256,7 +266,15 @@
     "errDateRequired": "日付は必須です",
     "errTimesRequired": "開始・終了時刻は必須です",
     "errCreateFailed": "残業記録の作成に失敗しました",
-    "toastCreated": "残業記録を作成しました"
+    "toastCreated": "残業記録を作成しました",
+    "tabMine": "自分の記録",
+    "tabPending": "承認待ち ({count})",
+    "colEmployee": "従業員",
+    "colActions": "操作",
+    "emptyPending": "承認待ちの残業記録はありません。",
+    "toastApproved": "残業を承認しました",
+    "toastRejected": "残業を却下しました",
+    "errActionFailed": "操作に失敗しました"
   },
   "flex": {
     "title": "フレックスタイム",
@@ -352,6 +370,11 @@
       "colDepartment": "部門",
       "colShift": "シフト",
       "colManager": "マネージャー",
+      "colJoinDate": "入社日",
+      "colSeniority": "勤続年数 / ボーナス",
+      "seniorityHint": "勤続 {years} 年 → +{bonus}h 休暇",
+      "joinDate": "入社日",
+      "joinDateHint": "勤続5年ごとに1日 (8時間) の年次休暇が追加されます。",
       "empty": "従業員が見つかりません。",
       "editTitle": "従業員を編集",
       "addTitle": "従業員を追加",

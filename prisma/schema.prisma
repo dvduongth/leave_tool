@@ -72,6 +72,7 @@ model Employee {
   role         Role      @default(EMPLOYEE)
   workShift    ShiftType @default(A) @map("work_shift")
   preferredLocale String @default("vi") @map("preferred_locale")
+  joinDate     DateTime? @map("join_date") @db.Date
   createdAt    DateTime  @default(now()) @map("created_at")
 
   department         Department             @relation("DepartmentEmployees", fields: [departmentId], references: [id])

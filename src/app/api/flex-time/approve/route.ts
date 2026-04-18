@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth-utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireRole("MANAGER", "HEAD");
+    const user = await requireRole("MANAGER", "HEAD", "ADMIN");
     const body = await request.json();
     const { recordId, action } = body;
 
@@ -34,13 +34,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the record belongs to their team
+    // Verify permission
     const isManager = record.employee.managerId === user.id;
     const isDeptHead =
       user.role === "HEAD" &&
       record.employee.departmentId === user.departmentId;
+    const isAdmin = user.role === "ADMIN";
 
-    if (!isManager && !isDeptHead) {
+    if (!isManager && !isDeptHead && !isAdmin) {
       return Response.json(
         { error: "You can only approve records for your team members" },
         { status: 403 }

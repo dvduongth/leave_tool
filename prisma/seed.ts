@@ -1,6 +1,7 @@
 import { PrismaClient } from "../src/generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { totalAnnualLeaveHours } from "../src/lib/seniority";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -69,6 +70,7 @@ async function main() {
       role: "ADMIN",
       workShift: "A",
       departmentId: engineering.id,
+      joinDate: new Date("2014-03-01"), // ~12y → +16h (2 tiers)
     },
   });
 
@@ -82,6 +84,7 @@ async function main() {
       role: "HEAD",
       workShift: "A",
       departmentId: engineering.id,
+      joinDate: new Date("2019-06-15"), // ~6y → +8h (1 tier)
     },
   });
 
@@ -95,6 +98,7 @@ async function main() {
       role: "HEAD",
       workShift: "B",
       departmentId: product.id,
+      joinDate: new Date("2020-01-10"), // ~6y → +8h
     },
   });
 
@@ -119,6 +123,7 @@ async function main() {
       workShift: "A",
       departmentId: engineering.id,
       managerId: headEng.id,
+      joinDate: new Date("2021-02-20"), // ~5y → +8h
     },
   });
 
@@ -133,6 +138,7 @@ async function main() {
       workShift: "B",
       departmentId: product.id,
       managerId: headProduct.id,
+      joinDate: new Date("2022-08-01"), // ~3y → +0h
     },
   });
 
@@ -147,6 +153,7 @@ async function main() {
       workShift: "A",
       departmentId: engineering.id,
       managerId: manager1.id,
+      joinDate: new Date("2023-05-01"),
     },
   });
 
@@ -161,6 +168,7 @@ async function main() {
       workShift: "B",
       departmentId: engineering.id,
       managerId: manager1.id,
+      joinDate: new Date("2024-09-15"),
     },
   });
 
@@ -175,6 +183,7 @@ async function main() {
       workShift: "B",
       departmentId: product.id,
       managerId: manager2.id,
+      joinDate: new Date("2025-01-06"),
     },
   });
 
@@ -189,6 +198,7 @@ async function main() {
       workShift: "C",
       departmentId: product.id,
       managerId: manager2.id,
+      joinDate: new Date("2025-03-20"),
     },
   });
 
@@ -196,6 +206,11 @@ async function main() {
   const allEmployees = [admin, headEng, headProduct, manager1, manager2, emp1, emp2, emp3, emp4];
 
   for (const emp of allEmployees) {
+    const cycle2026Start = new Date("2026-06-01");
+    const cycle2025Start = new Date("2025-06-01");
+    const total2026 = totalAnnualLeaveHours(emp.joinDate, cycle2026Start);
+    const total2025 = totalAnnualLeaveHours(emp.joinDate, cycle2025Start);
+
     // Current cycle 2026
     await prisma.leaveBalance.upsert({
       where: { employeeId_cycleYear: { employeeId: emp.id, cycleYear: 2026 } },
@@ -203,9 +218,9 @@ async function main() {
       create: {
         employeeId: emp.id,
         cycleYear: 2026,
-        cycleStart: new Date("2026-06-01"),
+        cycleStart: cycle2026Start,
         cycleEnd: new Date("2027-05-31"),
-        totalHours: 96,
+        totalHours: total2026,
         usedHours: 0,
         pendingHours: 0,
         graceDeadline: new Date("2027-07-31"),
@@ -221,9 +236,9 @@ async function main() {
       create: {
         employeeId: emp.id,
         cycleYear: 2025,
-        cycleStart: new Date("2025-06-01"),
+        cycleStart: cycle2025Start,
         cycleEnd: new Date("2026-05-31"),
-        totalHours: 96,
+        totalHours: total2025,
         usedHours: 0,
         pendingHours: 0,
         graceDeadline: new Date("2026-07-31"),

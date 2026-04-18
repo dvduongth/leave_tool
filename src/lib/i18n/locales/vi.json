@@ -230,8 +230,18 @@
     "errRejectReason": "Vui lòng nhập lý do từ chối.",
     "errApprove": "Không thể duyệt đơn.",
     "errReject": "Không thể từ chối đơn.",
+    "errApproveCancel": "Không thể duyệt yêu cầu huỷ.",
     "toastApproved": "Đã duyệt đơn.",
-    "toastRejected": "Đã từ chối đơn."
+    "toastRejected": "Đã từ chối đơn.",
+    "toastCancelApproved": "Đã duyệt huỷ đơn.",
+    "toastCancelRejected": "Đã từ chối yêu cầu huỷ. Đơn vẫn được giữ.",
+    "sectionNew": "Đơn nghỉ phép mới",
+    "sectionCancel": "Yêu cầu huỷ đơn",
+    "approveCancel": "Duyệt huỷ",
+    "rejectCancel": "Từ chối huỷ",
+    "rejectCancelTitle": "Từ chối yêu cầu huỷ đơn",
+    "rejectCancelDesc": "Đơn sẽ được giữ nguyên trạng thái đã duyệt. Nhân viên sẽ nhận thông báo.",
+    "cancelRequestNote": "Nhân viên đã yêu cầu huỷ đơn này. Duyệt sẽ trả lại quỹ phép đã trừ."
   },
   "ot": {
     "title": "Bảng kê OT",
@@ -256,7 +266,15 @@
     "errDateRequired": "Bắt buộc nhập ngày",
     "errTimesRequired": "Bắt buộc nhập giờ bắt đầu và kết thúc",
     "errCreateFailed": "Không thể tạo ghi nhận OT",
-    "toastCreated": "Đã tạo ghi nhận OT"
+    "toastCreated": "Đã tạo ghi nhận OT",
+    "tabMine": "Ghi nhận của tôi",
+    "tabPending": "Chờ duyệt ({count})",
+    "colEmployee": "Nhân viên",
+    "colActions": "Thao tác",
+    "emptyPending": "Không có OT chờ duyệt.",
+    "toastApproved": "Đã duyệt OT",
+    "toastRejected": "Đã từ chối OT",
+    "errActionFailed": "Không thể xử lý thao tác"
   },
   "flex": {
     "title": "Flex Time",
@@ -352,6 +370,11 @@
       "colDepartment": "Phòng ban",
       "colShift": "Ca",
       "colManager": "Quản lý",
+      "colJoinDate": "Ngày vào",
+      "colSeniority": "Thâm niên / Bonus",
+      "seniorityHint": "{years} năm thâm niên → +{bonus}h nghỉ phép",
+      "joinDate": "Ngày bắt đầu làm việc",
+      "joinDateHint": "Cứ mỗi 5 năm thâm niên, nhân viên được cộng thêm 1 ngày (8h) nghỉ phép/năm.",
       "empty": "Không tìm thấy nhân viên.",
       "editTitle": "Sửa nhân viên",
       "addTitle": "Thêm nhân viên",

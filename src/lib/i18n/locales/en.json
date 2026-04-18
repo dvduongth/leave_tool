@@ -230,8 +230,18 @@
     "errRejectReason": "Please provide a reason for rejection.",
     "errApprove": "Failed to approve.",
     "errReject": "Failed to reject.",
+    "errApproveCancel": "Failed to approve cancellation.",
     "toastApproved": "Leave approved.",
-    "toastRejected": "Leave rejected."
+    "toastRejected": "Leave rejected.",
+    "toastCancelApproved": "Cancellation approved.",
+    "toastCancelRejected": "Cancellation rejected. The leave remains approved.",
+    "sectionNew": "New leave requests",
+    "sectionCancel": "Cancellation requests",
+    "approveCancel": "Approve cancel",
+    "rejectCancel": "Reject cancel",
+    "rejectCancelTitle": "Reject cancellation request",
+    "rejectCancelDesc": "The leave will remain approved. The employee will be notified.",
+    "cancelRequestNote": "The employee requested to cancel this leave. Approving will restore the deducted balance."
   },
   "ot": {
     "title": "Overtime Records",
@@ -256,7 +266,15 @@
     "errDateRequired": "Date is required",
     "errTimesRequired": "Start and end times are required",
     "errCreateFailed": "Failed to create OT record",
-    "toastCreated": "OT record created"
+    "toastCreated": "OT record created",
+    "tabMine": "My records",
+    "tabPending": "Pending ({count})",
+    "colEmployee": "Employee",
+    "colActions": "Actions",
+    "emptyPending": "No OT records pending approval.",
+    "toastApproved": "OT approved",
+    "toastRejected": "OT rejected",
+    "errActionFailed": "Action failed"
   },
   "flex": {
     "title": "Flex Time",
@@ -352,6 +370,11 @@
       "colDepartment": "Department",
       "colShift": "Shift",
       "colManager": "Manager",
+      "colJoinDate": "Join date",
+      "colSeniority": "Seniority / Bonus",
+      "seniorityHint": "{years} years of service → +{bonus}h annual leave",
+      "joinDate": "Start date at company",
+      "joinDateHint": "Every 5 years of service grants an extra day (8h) of annual leave.",
       "empty": "No employees found.",
       "editTitle": "Edit Employee",
       "addTitle": "Add Employee",

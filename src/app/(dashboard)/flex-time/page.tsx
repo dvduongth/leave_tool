@@ -75,7 +75,8 @@ export default function FlexTimePage() {
   const t = useT();
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string } | undefined)?.role;
-  const isApprover = userRole === "MANAGER" || userRole === "HEAD";
+  const isApprover =
+    userRole === "MANAGER" || userRole === "HEAD" || userRole === "ADMIN";
 
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;

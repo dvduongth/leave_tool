@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
+import { BASE_ANNUAL_LEAVE_HOURS } from "@/lib/constants";
 
 function getWeekBounds(date: Date): { start: Date; end: Date } {
   const d = new Date(date);
@@ -404,10 +405,12 @@ async function getMonthlyReport(
     const totalOtMinutes = deptOt.reduce((s, r) => s + r.otMinutes, 0);
     const employeeCount = dept.employees.length;
 
-    // Utilization: usedHours / (employeeCount * 96) assuming 96h total per employee
+    // Utilization: usedHours / (employeeCount * BASE_ANNUAL_LEAVE_HOURS)
     const utilizationRate =
       employeeCount > 0
-        ? Math.round((totalLeaveHours / (employeeCount * 96)) * 100)
+        ? Math.round(
+            (totalLeaveHours / (employeeCount * BASE_ANNUAL_LEAVE_HOURS)) * 100
+          )
         : 0;
 
     const totalDeficit = deptFlex.reduce((s, f) => s + f.totalDeficit, 0);
