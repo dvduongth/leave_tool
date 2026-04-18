@@ -212,7 +212,9 @@ async function main() {
       },
     });
 
-    // Previous cycle 2025
+    // Previous cycle 2025 (kept for grace-period testing). Start fresh —
+    // usedHours should be 0 by default so new/seeded accounts don't appear
+    // to have burned 80h. Set manually in DB if you need the grace scenario.
     await prisma.leaveBalance.upsert({
       where: { employeeId_cycleYear: { employeeId: emp.id, cycleYear: 2025 } },
       update: {},
@@ -222,7 +224,7 @@ async function main() {
         cycleStart: new Date("2025-06-01"),
         cycleEnd: new Date("2026-05-31"),
         totalHours: 96,
-        usedHours: 80,
+        usedHours: 0,
         pendingHours: 0,
         graceDeadline: new Date("2026-07-31"),
       },
