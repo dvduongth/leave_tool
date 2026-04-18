@@ -36,7 +36,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsedDate = new Date(date);
+    // Accept "YYYY-MM-DD" (preferred) or full ISO. Normalise to UTC midnight
+    // so Postgres DATE column stores exactly the day the user picked — no
+    // timezone shift regardless of server TZ.
+    let parsedDate: Date;
+    const ymdMatch = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.exec(date);
+    if (ymdMatch) {
+      parsedDate = new Date(`${date}T00:00:00.000Z`);
+    } else {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        return Response.json({ error: "Invalid date" }, { status: 400 });
+      }
+      parsedDate = new Date(
+        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+      );
+    }
     if (isNaN(parsedDate.getTime())) {
       return Response.json({ error: "Invalid date" }, { status: 400 });
     }

@@ -91,7 +91,12 @@ export default function AdminHolidaysPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: formDate.toISOString(),
+          // Send as local date string YYYY-MM-DD so the server doesn't shift it
+          // via UTC conversion. (toISOString() would turn Apr 27 00:00 VN into
+          // Apr 26 17:00 UTC, which Postgres stores as Apr 26.)
+          date: `${formDate.getFullYear()}-${String(
+            formDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(formDate.getDate()).padStart(2, "0")}`,
           name: formName,
           year: parseInt(year, 10),
         }),
