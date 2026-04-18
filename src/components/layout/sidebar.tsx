@@ -11,6 +11,7 @@ import {
   BarChart3,
   Users,
   CalendarOff,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/generated/prisma";
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
     icon: BarChart3,
     roles: ["MANAGER", "HEAD", "ADMIN"],
   },
+  { label: "Hướng dẫn", href: "/help", icon: BookOpen },
 ];
 
 const adminItems: NavItem[] = [
