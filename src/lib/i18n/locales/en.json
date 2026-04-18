@@ -25,9 +25,22 @@
     "flexTime": "Flex Time",
     "reports": "Reports",
     "help": "User Guide",
+    "settings": "Settings",
     "admin": "Admin",
     "employees": "Employees",
     "holidays": "Holidays"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Customize your notifications and language",
+    "emailNotifTitle": "Email notifications",
+    "emailNotifLabel": "Send email for leave request events",
+    "emailNotifDesc": "Emails will be sent to {email}",
+    "emailNotifHint": "Includes: pending approval, approved/rejected, cancellation requests and their outcomes.",
+    "on": "On",
+    "off": "Off",
+    "savedToast": "Settings saved",
+    "saveFailedToast": "Failed to save settings"
   },
   "common": {
     "loading": "Loading...",

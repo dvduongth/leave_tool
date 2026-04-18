@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import { deductLeave } from "@/lib/leave-calculator";
-import { createNotification } from "@/lib/notifications";
+import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { ApprovalAction, LeaveStatus, Role } from "@/generated/prisma";
 
@@ -101,11 +101,15 @@ export async function POST(
         });
 
         // Notify employee
-        await createNotification(
+        await notifyLeaveEventFromRequest(
           leave.employeeId,
-          "Leave request approved",
-          `Your leave request for ${leave.totalHours}h has been approved`,
-          `/leaves/${id}`
+          "leave_approved",
+          leave,
+          {
+            title: "Leave request approved",
+            message: `Your leave request for ${leave.totalHours}h has been approved`,
+            link: `/leaves/${id}`,
+          }
         );
 
         return Response.json(updated);
@@ -144,11 +148,15 @@ export async function POST(
         select: { headId: true },
       });
       if (department?.headId) {
-        await createNotification(
+        await notifyLeaveEventFromRequest(
           department.headId,
-          "Leave request pending your approval",
-          `${leave.employee.name}'s leave request for ${leave.totalHours}h was approved by manager and needs your approval`,
-          `/leaves/${id}`
+          "leave_submitted_to_approver",
+          leave,
+          {
+            title: "Leave request pending your approval",
+            message: `${leave.employee.name}'s leave request for ${leave.totalHours}h was approved by manager and needs your approval`,
+            link: `/leaves/${id}`,
+          }
         );
       }
 
@@ -209,11 +217,15 @@ export async function POST(
       });
 
       // Notify employee
-      await createNotification(
+      await notifyLeaveEventFromRequest(
         leave.employeeId,
-        "Leave request approved",
-        `Your leave request for ${leave.totalHours}h has been fully approved`,
-        `/leaves/${id}`
+        "leave_approved",
+        leave,
+        {
+          title: "Leave request approved",
+          message: `Your leave request for ${leave.totalHours}h has been fully approved`,
+          link: `/leaves/${id}`,
+        }
       );
 
       return Response.json(updated);

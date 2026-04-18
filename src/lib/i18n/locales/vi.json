@@ -25,9 +25,22 @@
     "flexTime": "Flex Time",
     "reports": "Báo cáo",
     "help": "Hướng dẫn",
+    "settings": "Cài đặt",
     "admin": "Quản trị",
     "employees": "Nhân viên",
     "holidays": "Ngày lễ"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Tuỳ chỉnh thông báo và ngôn ngữ của bạn",
+    "emailNotifTitle": "Thông báo qua email",
+    "emailNotifLabel": "Gửi email khi có sự kiện về đơn phép",
+    "emailNotifDesc": "Email sẽ được gửi tới {email}",
+    "emailNotifHint": "Bao gồm: đơn chờ duyệt, đơn được duyệt/từ chối, yêu cầu huỷ và kết quả huỷ.",
+    "on": "Bật",
+    "off": "Tắt",
+    "savedToast": "Đã lưu cài đặt",
+    "saveFailedToast": "Lưu cài đặt thất bại"
   },
   "common": {
     "loading": "Đang tải...",

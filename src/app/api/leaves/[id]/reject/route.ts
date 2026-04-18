@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { ApprovalAction, LeaveStatus, Role } from "@/generated/prisma";
 
@@ -94,11 +94,16 @@ export async function POST(
       });
 
       // Notify employee
-      await createNotification(
+      await notifyLeaveEventFromRequest(
         leave.employeeId,
-        "Leave request rejected",
-        `Your leave request for ${leave.totalHours}h was rejected by your manager: "${comment.trim()}"`,
-        `/leaves/${id}`
+        "leave_rejected",
+        leave,
+        {
+          title: "Leave request rejected",
+          message: `Your leave request for ${leave.totalHours}h was rejected by your manager: "${comment.trim()}"`,
+          link: `/leaves/${id}`,
+        },
+        comment.trim()
       );
 
       return Response.json(updated);
@@ -157,11 +162,16 @@ export async function POST(
       });
 
       // Notify employee
-      await createNotification(
+      await notifyLeaveEventFromRequest(
         leave.employeeId,
-        "Leave request rejected",
-        `Your leave request for ${leave.totalHours}h was rejected by department head: "${comment.trim()}"`,
-        `/leaves/${id}`
+        "leave_rejected",
+        leave,
+        {
+          title: "Leave request rejected",
+          message: `Your leave request for ${leave.totalHours}h was rejected by department head: "${comment.trim()}"`,
+          link: `/leaves/${id}`,
+        },
+        comment.trim()
       );
 
       return Response.json(updated);

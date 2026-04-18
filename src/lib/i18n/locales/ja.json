@@ -25,9 +25,22 @@
     "flexTime": "フレックス",
     "reports": "レポート",
     "help": "ヘルプ",
+    "settings": "設定",
     "admin": "管理",
     "employees": "従業員",
     "holidays": "祝日"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "通知と言語をカスタマイズ",
+    "emailNotifTitle": "メール通知",
+    "emailNotifLabel": "休暇申請イベントのメール通知",
+    "emailNotifDesc": "{email} に送信されます",
+    "emailNotifHint": "承認待ち、承認／却下、キャンセル依頼と結果を含みます。",
+    "on": "オン",
+    "off": "オフ",
+    "savedToast": "設定を保存しました",
+    "saveFailedToast": "設定の保存に失敗しました"
   },
   "common": {
     "loading": "読み込み中...",

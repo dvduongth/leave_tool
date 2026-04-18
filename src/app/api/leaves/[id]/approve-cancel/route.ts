@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import { restoreLeave } from "@/lib/leave-calculator";
-import { createNotification } from "@/lib/notifications";
+import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
 
@@ -91,11 +91,15 @@ export async function POST(
       },
     });
 
-    await createNotification(
+    await notifyLeaveEventFromRequest(
       leave.employeeId,
-      "Leave cancellation approved",
-      `Your request to cancel ${leave.totalHours}h of leave has been approved`,
-      `/leaves/${id}`
+      "leave_cancel_approved",
+      leave,
+      {
+        title: "Leave cancellation approved",
+        message: `Your request to cancel ${leave.totalHours}h of leave has been approved`,
+        link: `/leaves/${id}`,
+      }
     );
 
     return Response.json(updated);

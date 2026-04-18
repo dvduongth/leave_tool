@@ -12,6 +12,7 @@ import {
   Users,
   CalendarOff,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
     roles: ["MANAGER", "HEAD", "ADMIN"],
   },
   { labelKey: "nav.help", href: "/help", icon: BookOpen },
+  { labelKey: "nav.settings", href: "/settings", icon: Settings },
 ];
 
 const adminItems: NavItem[] = [

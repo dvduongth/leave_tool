@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
 
@@ -85,12 +85,17 @@ export async function POST(
     });
 
     // Notify the approver
+    const approverInApp = {
+      title: "New leave request pending approval",
+      message: `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
+      link: `/leaves/${id}`,
+    };
     if (nextStatus === LeaveStatus.PENDING_MANAGER && leave.employee.managerId) {
-      await createNotification(
+      await notifyLeaveEventFromRequest(
         leave.employee.managerId,
-        "New leave request pending approval",
-        `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
-        `/leaves/${id}`
+        "leave_submitted_to_approver",
+        leave,
+        approverInApp
       );
     } else if (nextStatus === LeaveStatus.PENDING_HEAD) {
       // Find department head
@@ -99,11 +104,11 @@ export async function POST(
         select: { headId: true },
       });
       if (department?.headId && department.headId !== leave.employeeId) {
-        await createNotification(
+        await notifyLeaveEventFromRequest(
           department.headId,
-          "New leave request pending approval",
-          `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
-          `/leaves/${id}`
+          "leave_submitted_to_approver",
+          leave,
+          approverInApp
         );
       } else {
         // No head set, OR the submitter is themselves the head/admin.
@@ -113,11 +118,11 @@ export async function POST(
           select: { id: true },
         });
         for (const a of admins) {
-          await createNotification(
+          await notifyLeaveEventFromRequest(
             a.id,
-            "New leave request pending approval",
-            `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
-            `/leaves/${id}`
+            "leave_submitted_to_approver",
+            leave,
+            approverInApp
           );
         }
       }

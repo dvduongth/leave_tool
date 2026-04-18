@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
 
@@ -90,11 +90,16 @@ export async function POST(
       },
     });
 
-    await createNotification(
+    await notifyLeaveEventFromRequest(
       leave.employeeId,
-      "Leave cancellation rejected",
-      `Your request to cancel ${leave.totalHours}h of leave was rejected${comment ? `: ${comment}` : ""}. The leave remains approved.`,
-      `/leaves/${id}`
+      "leave_cancel_rejected",
+      leave,
+      {
+        title: "Leave cancellation rejected",
+        message: `Your request to cancel ${leave.totalHours}h of leave was rejected${comment ? `: ${comment}` : ""}. The leave remains approved.`,
+        link: `/leaves/${id}`,
+      },
+      comment ?? null
     );
 
     return Response.json(updated);
