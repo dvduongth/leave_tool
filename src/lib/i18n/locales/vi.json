@@ -1,0 +1,64 @@
+{
+  "app": {
+    "name": "Leave Manager",
+    "tagline": "Quản lý nghỉ phép"
+  },
+  "locale": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "auth": {
+    "signIn": "Đăng nhập",
+    "signOut": "Đăng xuất",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "signInDesc": "Nhập thông tin tài khoản để tiếp tục",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng."
+  },
+  "nav": {
+    "dashboard": "Trang chủ",
+    "myLeaves": "Nghỉ phép",
+    "approvals": "Duyệt đơn",
+    "ot": "OT",
+    "flexTime": "Flex Time",
+    "reports": "Báo cáo",
+    "help": "Hướng dẫn",
+    "admin": "Quản trị",
+    "employees": "Nhân viên",
+    "holidays": "Ngày lễ"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "delete": "Xoá",
+    "edit": "Sửa",
+    "create": "Tạo mới",
+    "update": "Cập nhật",
+    "submit": "Gửi",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "translate": "Dịch",
+    "original": "Gốc",
+    "close": "Đóng",
+    "noData": "Chưa có dữ liệu",
+    "actions": "Thao tác"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "empty": "Chưa có thông báo mới",
+    "markAllRead": "Đánh dấu đã đọc"
+  },
+  "help": {
+    "title": "Hướng dẫn sử dụng",
+    "loggedInAs": "Bạn đang đăng nhập với vai trò"
+  },
+  "translate": {
+    "button": "Dịch",
+    "showOriginal": "Xem bản gốc",
+    "loading": "Đang dịch...",
+    "failed": "Không thể dịch"
+  }
+}

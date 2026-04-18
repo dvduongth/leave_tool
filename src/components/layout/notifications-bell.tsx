@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS, ja } from "date-fns/locale";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocale } from "@/lib/i18n/provider";
 
 interface Notification {
   id: string;
@@ -21,7 +22,10 @@ interface Notification {
   createdAt: string;
 }
 
+const DFN_LOCALE = { vi, en: enUS, ja } as const;
+
 export function NotificationsBell() {
+  const { t, locale } = useLocale();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -89,25 +93,25 @@ export function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <div className="text-sm font-semibold">Thông báo</div>
+          <div className="text-sm font-semibold">{t("notifications.title")}</div>
           {unreadCount > 0 && (
             <button
               onClick={markAllRead}
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               <CheckCheck className="size-3" />
-              Đánh dấu đã đọc
+              {t("notifications.markAllRead")}
             </button>
           )}
         </div>
 
         {loading && items.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            Đang tải...
+            {t("common.loading")}
           </div>
         ) : items.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
-            Chưa có thông báo mới
+            {t("notifications.empty")}
           </div>
         ) : (
           <ScrollArea className="max-h-80">
@@ -139,7 +143,7 @@ export function NotificationsBell() {
                       <div className="text-[10px] text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(n.createdAt), {
                           addSuffix: true,
-                          locale: vi,
+                          locale: DFN_LOCALE[locale],
                         })}
                       </div>
                     </div>

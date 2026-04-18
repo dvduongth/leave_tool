@@ -46,6 +46,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
+import { TranslateText } from "@/components/translate-text";
 import type { LeaveStatus } from "@/generated/prisma";
 
 // Time slots for edit mode
@@ -423,7 +424,7 @@ export default function LeaveDetailPage() {
               {leave.reason && (
                 <div>
                   <p className="text-xs text-muted-foreground">Reason</p>
-                  <p className="text-sm">{leave.reason}</p>
+                  <TranslateText text={leave.reason} className="text-sm" />
                 </div>
               )}
             </div>
@@ -557,9 +558,12 @@ export default function LeaveDetailPage() {
                       {entry.action.replace(/_/g, " ")}
                     </p>
                     {entry.comment && (
-                      <p className="mt-1 rounded bg-muted/50 p-2 text-sm">
-                        {entry.comment}
-                      </p>
+                      <div className="mt-1 rounded bg-muted/50 p-2">
+                        <TranslateText
+                          text={entry.comment}
+                          className="text-sm"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

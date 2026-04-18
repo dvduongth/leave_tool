@@ -4,6 +4,8 @@ import { signOut } from "next-auth/react";
 import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationsBell } from "./notifications-bell";
+import { LocaleSwitcher } from "./locale-switcher";
+import { useT } from "@/lib/i18n/provider";
 import type { Role } from "@/generated/prisma";
 
 interface HeaderProps {
@@ -20,6 +22,7 @@ const roleBadgeColors: Record<Role, string> = {
 };
 
 export function Header({ userName, role, onMenuToggle }: HeaderProps) {
+  const t = useT();
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
@@ -42,10 +45,12 @@ export function Header({ userName, role, onMenuToggle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <LocaleSwitcher />
         <NotificationsBell />
         <Button
           variant="ghost"
           size="icon"
+          title={t("auth.signOut")}
           onClick={() => signOut({ callbackUrl: "/login" })}
         >
           <LogOut className="size-4" />

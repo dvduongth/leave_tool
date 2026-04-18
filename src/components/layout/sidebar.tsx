@@ -14,38 +14,39 @@ import {
   BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/provider";
 import type { Role } from "@/generated/prisma";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: Role[];
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "My Leaves", href: "/leaves", icon: CalendarDays },
+  { labelKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
+  { labelKey: "nav.myLeaves", href: "/leaves", icon: CalendarDays },
   {
-    label: "Approvals",
+    labelKey: "nav.approvals",
     href: "/approvals",
     icon: CheckSquare,
     roles: ["MANAGER", "HEAD", "ADMIN"],
   },
-  { label: "OT Records", href: "/ot", icon: Clock },
-  { label: "Flex Time", href: "/flex-time", icon: Timer },
+  { labelKey: "nav.ot", href: "/ot", icon: Clock },
+  { labelKey: "nav.flexTime", href: "/flex-time", icon: Timer },
   {
-    label: "Reports",
+    labelKey: "nav.reports",
     href: "/reports",
     icon: BarChart3,
     roles: ["MANAGER", "HEAD", "ADMIN"],
   },
-  { label: "Hướng dẫn", href: "/help", icon: BookOpen },
+  { labelKey: "nav.help", href: "/help", icon: BookOpen },
 ];
 
 const adminItems: NavItem[] = [
-  { label: "Employees", href: "/admin/employees", icon: Users },
-  { label: "Holidays", href: "/admin/holidays", icon: CalendarOff },
+  { labelKey: "nav.employees", href: "/admin/employees", icon: Users },
+  { labelKey: "nav.holidays", href: "/admin/holidays", icon: CalendarOff },
 ];
 
 interface SidebarProps {
@@ -54,6 +55,7 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const t = useT();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -67,7 +69,7 @@ export function Sidebar({ role }: SidebarProps) {
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-background">
       <div className="flex h-14 items-center border-b px-4">
-        <h1 className="text-lg font-semibold">Leave Manager</h1>
+        <h1 className="text-lg font-semibold">{t("app.name")}</h1>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {visibleItems.map((item) => {
@@ -84,7 +86,7 @@ export function Sidebar({ role }: SidebarProps) {
               )}
             >
               <Icon className="size-4" />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
@@ -93,7 +95,7 @@ export function Sidebar({ role }: SidebarProps) {
           <>
             <div className="my-3 border-t pt-3">
               <span className="px-3 text-xs font-semibold uppercase text-muted-foreground">
-                Admin
+                {t("nav.admin")}
               </span>
             </div>
             {adminItems.map((item) => {
@@ -110,7 +112,7 @@ export function Sidebar({ role }: SidebarProps) {
                   )}
                 >
                   <Icon className="size-4" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}

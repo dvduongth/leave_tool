@@ -4,9 +4,12 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/provider";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,7 +29,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Email hoặc mật khẩu không đúng.");
+      setError(t("auth.invalidCredentials"));
       return;
     }
 
@@ -36,18 +39,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-sm relative">
+        <div className="absolute right-4 top-4">
+          <LocaleSwitcher />
+        </div>
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Đăng nhập</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Nhập thông tin tài khoản để tiếp tục
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("auth.signIn")}</h1>
+          <p className="mt-1 text-sm text-gray-500">{t("auth.signInDesc")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium leading-none">
-              Email
+              {t("auth.email")}
             </label>
             <input
               id="email"
@@ -62,7 +66,7 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium leading-none">
-              Mật khẩu
+              {t("auth.password")}
             </label>
             <input
               id="password"
@@ -80,7 +84,7 @@ export default function LoginPage() {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+            {loading ? t("common.loading") : t("auth.signIn")}
           </Button>
         </form>
       </div>

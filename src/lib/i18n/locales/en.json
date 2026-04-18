@@ -1,0 +1,64 @@
+{
+  "app": {
+    "name": "Leave Manager",
+    "tagline": "Leave management"
+  },
+  "locale": {
+    "label": "Language",
+    "vi": "Tiếng Việt",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "signInDesc": "Enter your credentials to continue",
+    "invalidCredentials": "Invalid email or password."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "myLeaves": "My Leaves",
+    "approvals": "Approvals",
+    "ot": "OT",
+    "flexTime": "Flex Time",
+    "reports": "Reports",
+    "help": "User Guide",
+    "admin": "Admin",
+    "employees": "Employees",
+    "holidays": "Holidays"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "translate": "Translate",
+    "original": "Original",
+    "close": "Close",
+    "noData": "No data yet",
+    "actions": "Actions"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No new notifications",
+    "markAllRead": "Mark all as read"
+  },
+  "help": {
+    "title": "User Guide",
+    "loggedInAs": "You are signed in as"
+  },
+  "translate": {
+    "button": "Translate",
+    "showOriginal": "Show original",
+    "loading": "Translating...",
+    "failed": "Translation failed"
+  }
+}
