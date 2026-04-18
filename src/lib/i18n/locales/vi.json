@@ -79,7 +79,22 @@
   },
   "help": {
     "title": "Hướng dẫn sử dụng",
-    "loggedInAs": "Bạn đang đăng nhập với vai trò"
+    "loggedInAs": "Bạn đang đăng nhập với vai trò",
+    "role": {
+      "admin": "Quản trị hệ thống",
+      "head": "Trưởng bộ phận",
+      "manager": "Quản lý trực tiếp",
+      "employee": "Nhân viên"
+    },
+    "translator": {
+      "translating": "Đang dịch trang…",
+      "translated": "Được dịch bởi DeepL · có thể có sai sót",
+      "error": "Dịch thất bại. Đang hiển thị bản gốc.",
+      "originalLabel": "Đang hiển thị bản gốc (Tiếng Việt)",
+      "showOriginal": "Xem bản gốc",
+      "reapply": "Áp dụng lại bản dịch",
+      "retranslate": "Dịch lại"
+    }
   },
   "translate": {
     "button": "Dịch",

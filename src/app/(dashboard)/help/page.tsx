@@ -1,5 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { resolveLocale } from "@/lib/i18n/server";
+import { messages, translate } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -15,34 +17,38 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
+import { HelpTranslator } from "@/components/help-translator";
 
 type Role = "ADMIN" | "HEAD" | "MANAGER" | "EMPLOYEE";
-
-const roleLabel: Record<Role, string> = {
-  ADMIN: "Quản trị hệ thống",
-  HEAD: "Trưởng bộ phận",
-  MANAGER: "Quản lý trực tiếp",
-  EMPLOYEE: "Nhân viên",
-};
 
 export default async function HelpPage() {
   const session = await getServerSession(authOptions);
   const user = session?.user as { role: Role; name: string } | undefined;
   const role: Role = user?.role ?? "EMPLOYEE";
 
+  const locale = await resolveLocale();
+  const t = (k: string) => translate(messages[locale], k);
+  const roleLabel: Record<Role, string> = {
+    ADMIN: t("help.role.admin"),
+    HEAD: t("help.role.head"),
+    MANAGER: t("help.role.manager"),
+    EMPLOYEE: t("help.role.employee"),
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="flex items-center gap-3">
         <BookOpen className="size-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Hướng dẫn sử dụng</h1>
+          <h1 className="text-2xl font-bold">{t("help.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Bạn đang đăng nhập với vai trò{" "}
+            {t("help.loggedInAs")}{" "}
             <Badge variant="secondary">{roleLabel[role]}</Badge>
           </p>
         </div>
       </div>
 
+      <HelpTranslator>
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex flex-wrap gap-1 h-auto">
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
@@ -430,6 +436,7 @@ export default async function HelpPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      </HelpTranslator>
     </div>
   );
 }

@@ -79,7 +79,22 @@
   },
   "help": {
     "title": "ユーザーガイド",
-    "loggedInAs": "ログイン中のロール"
+    "loggedInAs": "ログイン中のロール",
+    "role": {
+      "admin": "システム管理者",
+      "head": "部門長",
+      "manager": "直属の上司",
+      "employee": "社員"
+    },
+    "translator": {
+      "translating": "このページを翻訳中…",
+      "translated": "DeepL による翻訳 · 誤りを含む可能性があります",
+      "error": "翻訳に失敗しました。原文を表示しています。",
+      "originalLabel": "原文を表示中（ベトナム語）",
+      "showOriginal": "原文を表示",
+      "reapply": "翻訳を再適用",
+      "retranslate": "再翻訳"
+    }
   },
   "translate": {
     "button": "翻訳",

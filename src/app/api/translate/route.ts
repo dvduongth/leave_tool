@@ -25,13 +25,13 @@ const MYMEMORY_LANG: Record<string, string> = {
 };
 
 async function translateWithDeepL(
-  text: string,
+  texts: string[],
   target: string,
   source: string | undefined,
   apiKey: string
-): Promise<string> {
+): Promise<string[]> {
   const body = new URLSearchParams();
-  body.append("text", text);
+  for (const t of texts) body.append("text", t);
   body.append("target_lang", DEEPL_TARGET_MAP[target] ?? target);
   if (source) body.append("source_lang", DEEPL_TARGET_MAP[source] ?? source);
 
@@ -54,7 +54,7 @@ async function translateWithDeepL(
   const data = (await res.json()) as {
     translations: { text: string; detected_source_language?: string }[];
   };
-  return data.translations[0]?.text ?? text;
+  return texts.map((t, i) => data.translations[i]?.text ?? t);
 }
 
 async function translateWithMyMemory(
@@ -85,40 +85,66 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { text, target, source } = (await request.json()) as {
-      text: string;
+    const body = (await request.json()) as {
+      text?: string;
+      texts?: string[];
       target: string;
       source?: string;
     };
-    if (!text || !target) {
+    const { target, source } = body;
+    const inputs: string[] = body.texts
+      ? body.texts
+      : body.text
+        ? [body.text]
+        : [];
+
+    if (inputs.length === 0 || !target) {
       return Response.json(
-        { error: "Missing text or target" },
+        { error: "Missing text/texts or target" },
         { status: 400 }
       );
     }
-    if (text.length > 5000) {
-      return Response.json({ error: "Text too long (max 5000 chars)" }, {
-        status: 400,
-      });
+    const totalLen = inputs.reduce((s, t) => s + t.length, 0);
+    if (totalLen > 120_000) {
+      return Response.json(
+        { error: "Payload too large (max 120k chars)" },
+        { status: 400 }
+      );
+    }
+    if (inputs.length > 50) {
+      return Response.json(
+        { error: "Too many items (max 50 per request)" },
+        { status: 400 }
+      );
     }
 
     const apiKey = process.env.DEEPL_API_KEY;
-    let translated: string;
+    let translatedArr: string[];
     let provider: "deepl" | "mymemory";
 
     if (apiKey) {
-      translated = await translateWithDeepL(text, target, source, apiKey);
+      translatedArr = await translateWithDeepL(inputs, target, source, apiKey);
       provider = "deepl";
     } else {
-      translated = await translateWithMyMemory(
-        text,
-        target,
-        source ?? "auto"
-      );
+      translatedArr = [];
+      for (const t of inputs) {
+        try {
+          translatedArr.push(
+            await translateWithMyMemory(t, target, source ?? "auto")
+          );
+        } catch {
+          translatedArr.push(t);
+        }
+      }
       provider = "mymemory";
     }
 
-    return Response.json({ translated, provider });
+    // Backward compat: when single `text` was sent, also return `translated`.
+    return Response.json({
+      translated: translatedArr[0],
+      translatedArray: translatedArr,
+      provider,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Translation failed";
     return Response.json({ error: message }, { status: 500 });

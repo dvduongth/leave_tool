@@ -79,7 +79,22 @@
   },
   "help": {
     "title": "User Guide",
-    "loggedInAs": "You are signed in as"
+    "loggedInAs": "You are signed in as",
+    "role": {
+      "admin": "System Administrator",
+      "head": "Department Head",
+      "manager": "Direct Manager",
+      "employee": "Employee"
+    },
+    "translator": {
+      "translating": "Translating this page…",
+      "translated": "Translated by DeepL · may contain inaccuracies",
+      "error": "Translation failed. Showing original.",
+      "originalLabel": "Showing original (Vietnamese)",
+      "showOriginal": "Show original",
+      "reapply": "Re-apply translation",
+      "retranslate": "Retranslate"
+    }
   },
   "translate": {
     "button": "Translate",
