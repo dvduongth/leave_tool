@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireRole } from "@/lib/auth-utils";
+import { requireRole, getCurrentUser } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
 
 export async function GET(
@@ -84,6 +84,95 @@ export async function PATCH(
     });
 
     return Response.json(updated);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal error";
+    if (message === "Unauthorized")
+      return Response.json({ error: message }, { status: 401 });
+    if (message === "Forbidden")
+      return Response.json({ error: message }, { status: 403 });
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await requireRole("ADMIN");
+    const currentUser = await getCurrentUser();
+    const { id } = await params;
+
+    if (currentUser?.id === id) {
+      return Response.json(
+        { error: "Bạn không thể tự xoá tài khoản của mình." },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.employee.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            leaveRequests: true,
+            otRecords: true,
+            flexTimeRecords: true,
+            subordinates: true,
+          },
+        },
+      },
+    });
+    if (!existing) {
+      return Response.json({ error: "Employee not found" }, { status: 404 });
+    }
+
+    // Block delete if this user heads a department
+    const leadsDepartment = await prisma.department.findFirst({
+      where: { headId: id },
+      select: { name: true },
+    });
+    if (leadsDepartment) {
+      return Response.json(
+        {
+          error: `Nhân viên này đang là trưởng phòng "${leadsDepartment.name}". Hãy chuyển Head sang người khác trước khi xoá.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Block delete if still has direct reports
+    if (existing._count.subordinates > 0) {
+      return Response.json(
+        {
+          error: `Nhân viên này đang quản lý ${existing._count.subordinates} người. Hãy đổi manager cho cấp dưới trước khi xoá.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // Block delete if has historical records (leaves/OT/flex)
+    const hasHistory =
+      existing._count.leaveRequests > 0 ||
+      existing._count.otRecords > 0 ||
+      existing._count.flexTimeRecords > 0;
+
+    if (hasHistory) {
+      return Response.json(
+        {
+          error:
+            "Nhân viên này đã có dữ liệu nghỉ phép / OT / flex time. Không thể xoá để giữ lịch sử. Nếu cần, hãy vô hiệu hoá thay vì xoá.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Safe to hard-delete: remove leave balances + notifications first
+    await prisma.leaveBalance.deleteMany({ where: { employeeId: id } });
+    await prisma.notification.deleteMany({ where: { userId: id } });
+    await prisma.employee.delete({ where: { id } });
+
+    return Response.json({ ok: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Internal error";
     if (message === "Unauthorized")

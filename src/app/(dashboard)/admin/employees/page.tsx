@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +62,7 @@ export default function AdminEmployeesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -217,6 +218,33 @@ export default function AdminEmployeesPage() {
       toast.error("An unexpected error occurred");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!editingEmployee) return;
+    const ok = window.confirm(
+      `Xoá nhân viên "${editingEmployee.name}"?\n\nThao tác này không thể hoàn tác. Nếu nhân viên có dữ liệu nghỉ phép/OT/flex trong lịch sử, hệ thống sẽ chặn và gợi ý vô hiệu hoá thay vì xoá.`
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${editingEmployee.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Đã xoá nhân viên");
+        setDialogOpen(false);
+        fetchEmployees();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Không thể xoá nhân viên");
+      }
+    } catch {
+      toast.error("Có lỗi xảy ra khi xoá");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -405,8 +433,21 @@ export default function AdminEmployeesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={submitting}>
+            <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
+              {editingEmployee ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleting || submitting}
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="size-4" data-icon="inline-start" />
+                  {deleting ? "Đang xoá..." : "Xoá"}
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button type="submit" disabled={submitting || deleting}>
                 {submitting
                   ? "Saving..."
                   : editingEmployee

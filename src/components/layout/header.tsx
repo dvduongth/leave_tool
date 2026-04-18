@@ -1,8 +1,9 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { Bell, LogOut, Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationsBell } from "./notifications-bell";
 import type { Role } from "@/generated/prisma";
 
 interface HeaderProps {
@@ -41,12 +42,7 @@ export function Header({ userName, role, onMenuToggle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="size-4" />
-          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
-            0
-          </span>
-        </Button>
+        <NotificationsBell />
         <Button
           variant="ghost"
           size="icon"
