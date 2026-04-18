@@ -105,11 +105,12 @@ export default function OTPage() {
   const myRecords = records.filter(
     (r) => !r.employee || r.employee.id === userId
   );
+  const isAdmin = role === "ADMIN";
   const pendingTeamRecords = records.filter(
     (r) =>
       r.status === "PENDING" &&
       r.employee &&
-      r.employee.id !== userId
+      (isAdmin || r.employee.id !== userId)
   );
 
   const totalMinutes = myRecords.reduce((sum, r) => sum + r.otMinutes, 0);
