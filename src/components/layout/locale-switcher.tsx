@@ -5,7 +5,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -34,10 +33,10 @@ export function LocaleSwitcher() {
         <span className="sr-only">{t("locale.label")}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuLabel className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-1.5 py-1 text-xs font-medium text-muted-foreground">
           <Globe className="size-3.5" />
           {t("locale.label")}
-        </DropdownMenuLabel>
+        </div>
         <DropdownMenuSeparator />
         {SUPPORTED_LOCALES.map((l) => (
           <DropdownMenuItem

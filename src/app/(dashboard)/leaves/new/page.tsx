@@ -26,6 +26,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
+import { useT } from "@/lib/i18n/provider";
 
 // Generate 15-minute time slots from 07:00 to 19:00
 function generateTimeSlots(): string[] {
@@ -58,6 +59,7 @@ interface PreviewResult {
 
 export default function NewLeavePage() {
   const router = useRouter();
+  const t = useT();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("08:00");
   const [totalHours, setTotalHours] = useState("8");
@@ -102,7 +104,7 @@ export default function NewLeavePage() {
 
   async function handleSave(submitAfter: boolean) {
     if (!startDate || parsedHours <= 0) {
-      toast.error("Please fill in the start date and hours.");
+      toast.error(t("newLeave.errInvalid"));
       return;
     }
 
@@ -121,7 +123,7 @@ export default function NewLeavePage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to create leave request.");
+        toast.error(err.error || t("newLeave.errCreate"));
         return;
       }
 
@@ -133,15 +135,13 @@ export default function NewLeavePage() {
         });
         if (!submitRes.ok) {
           const err = await submitRes.json().catch(() => ({}));
-          toast.error(
-            err.error || "Leave saved but failed to submit for approval."
-          );
+          toast.error(err.error || t("newLeave.errSavedNotSubmitted"));
           router.push("/leaves");
           return;
         }
-        toast.success("Leave submitted for approval.");
+        toast.success(t("newLeave.toastSubmitted"));
       } else {
-        toast.success("Leave saved as draft.");
+        toast.success(t("newLeave.toastDraftSaved"));
       }
 
       router.push("/leaves");
@@ -161,9 +161,9 @@ export default function NewLeavePage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">New Leave Request</h1>
+          <h1 className="text-2xl font-bold">{t("newLeave.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Create a new leave request
+            {t("newLeave.subtitle")}
           </p>
         </div>
       </div>
@@ -172,26 +172,26 @@ export default function NewLeavePage() {
       {balance && (
         <Card>
           <CardHeader>
-            <CardTitle>Leave Balance</CardTitle>
-            <CardDescription>Current cycle</CardDescription>
+            <CardTitle>{t("newLeave.balanceTitle")}</CardTitle>
+            <CardDescription>{t("newLeave.balanceDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">{balance.remainingHours}h</p>
-                <p className="text-xs text-muted-foreground">Remaining</p>
+                <p className="text-xs text-muted-foreground">{t("newLeave.remaining")}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-muted-foreground">
                   {balance.usedHours}h
                 </p>
-                <p className="text-xs text-muted-foreground">Used</p>
+                <p className="text-xs text-muted-foreground">{t("newLeave.used")}</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-muted-foreground">
                   {balance.pendingHours}h
                 </p>
-                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-xs text-muted-foreground">{t("newLeave.pending")}</p>
               </div>
             </div>
           </CardContent>
@@ -201,12 +201,12 @@ export default function NewLeavePage() {
       {/* Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Leave Details</CardTitle>
+          <CardTitle>{t("newLeave.details")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Start Date */}
           <div className="space-y-2">
-            <Label>Start Date</Label>
+            <Label>{t("newLeave.startDate")}</Label>
             <Popover>
               <PopoverTrigger
                 className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
@@ -215,7 +215,7 @@ export default function NewLeavePage() {
                 {startDate ? (
                   format(startDate, "EEEE, MMMM d, yyyy")
                 ) : (
-                  <span className="text-muted-foreground">Pick a date</span>
+                  <span className="text-muted-foreground">{t("common.pickDate")}</span>
                 )}
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -234,10 +234,10 @@ export default function NewLeavePage() {
 
           {/* Start Time */}
           <div className="space-y-2">
-            <Label>Start Time</Label>
+            <Label>{t("newLeave.startTime")}</Label>
             <Select value={startTime} onValueChange={(val) => setStartTime(val as string)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select time" />
+                <SelectValue placeholder={t("newLeave.selectTime")} />
               </SelectTrigger>
               <SelectContent>
                 {TIME_SLOTS.map((time) => (
@@ -251,7 +251,7 @@ export default function NewLeavePage() {
 
           {/* Total Hours */}
           <div className="space-y-2">
-            <Label>Total Hours</Label>
+            <Label>{t("newLeave.totalHours")}</Label>
             <Input
               type="number"
               min="0.25"
@@ -265,12 +265,12 @@ export default function NewLeavePage() {
           {/* Reason */}
           <div className="space-y-2">
             <Label>
-              Reason <span className="text-muted-foreground">(optional)</span>
+              {t("newLeave.reason")} <span className="text-muted-foreground">{t("common.optional")}</span>
             </Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Brief reason for your leave..."
+              placeholder={t("newLeave.reasonPlaceholder")}
               rows={3}
             />
           </div>
@@ -280,21 +280,21 @@ export default function NewLeavePage() {
             <>
               <Separator />
               <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                <p className="text-sm font-medium">Preview</p>
+                <p className="text-sm font-medium">{t("newLeave.preview")}</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Start:</span>{" "}
+                    <span className="text-muted-foreground">{t("newLeave.previewStart")}</span>{" "}
                     {format(startDate, "MMM d, yyyy")} {startTime}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">End:</span>{" "}
+                    <span className="text-muted-foreground">{t("newLeave.previewEnd")}</span>{" "}
                     {format(new Date(preview.endDate), "MMM d, yyyy")}{" "}
                     {preview.endTime}
                   </div>
                 </div>
                 {preview.dailyBreakdown.length > 1 && (
                   <div className="mt-2 space-y-1">
-                    <p className="text-xs text-muted-foreground">Daily breakdown:</p>
+                    <p className="text-xs text-muted-foreground">{t("newLeave.dailyBreakdown")}</p>
                     {preview.dailyBreakdown.map((day, i) => (
                       <div
                         key={i}
@@ -319,10 +319,10 @@ export default function NewLeavePage() {
           disabled={submitting}
           onClick={() => handleSave(false)}
         >
-          Save as Draft
+          {t("newLeave.saveDraft")}
         </Button>
         <Button disabled={submitting} onClick={() => handleSave(true)}>
-          Submit for Approval
+          {t("newLeave.submitApproval")}
         </Button>
       </div>
     </div>

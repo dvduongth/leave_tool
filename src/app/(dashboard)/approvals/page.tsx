@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
 import { Separator } from "@/components/ui/separator";
+import { useT } from "@/lib/i18n/provider";
 import type { LeaveStatus } from "@/generated/prisma";
 
 interface PendingLeave {
@@ -46,6 +47,7 @@ interface PendingLeave {
 }
 
 export default function ApprovalsPage() {
+  const t = useT();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
 
@@ -87,10 +89,10 @@ export default function ApprovalsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to approve.");
+        toast.error(err.error || t("approvals.errApprove"));
         return;
       }
-      toast.success("Leave approved.");
+      toast.success(t("approvals.toastApproved"));
       setLeaves((prev) => prev.filter((l) => l.id !== leaveId));
     } finally {
       setProcessingId(null);
@@ -106,7 +108,7 @@ export default function ApprovalsPage() {
   async function handleReject() {
     if (!rejectTargetId) return;
     if (!rejectComment.trim()) {
-      toast.error("Please provide a reason for rejection.");
+      toast.error(t("approvals.errRejectReason"));
       return;
     }
 
@@ -119,10 +121,10 @@ export default function ApprovalsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to reject.");
+        toast.error(err.error || t("approvals.errReject"));
         return;
       }
-      toast.success("Leave rejected.");
+      toast.success(t("approvals.toastRejected"));
       setLeaves((prev) => prev.filter((l) => l.id !== rejectTargetId));
       setRejectDialogOpen(false);
       setRejectTargetId(null);
@@ -135,7 +137,7 @@ export default function ApprovalsPage() {
   if (role && !["MANAGER", "HEAD", "ADMIN"].includes(role)) {
     return (
       <div className="flex h-64 items-center justify-center text-muted-foreground">
-        You do not have permission to view this page.
+        {t("approvals.noPermission")}
       </div>
     );
   }
@@ -143,20 +145,20 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Pending Approvals</h1>
+        <h1 className="text-2xl font-bold">{t("approvals.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Review and approve leave requests from your team
+          {t("approvals.subtitle")}
         </p>
       </div>
 
       {loading ? (
         <div className="flex h-48 items-center justify-center text-muted-foreground">
-          Loading...
+          {t("common.loading")}
         </div>
       ) : leaves.length === 0 ? (
         <Card>
           <CardContent className="flex h-48 items-center justify-center text-muted-foreground">
-            No pending approvals.
+            {t("approvals.empty")}
           </CardContent>
         </Card>
       ) : (
@@ -178,27 +180,27 @@ export default function ApprovalsPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Start</p>
+                    <p className="text-xs text-muted-foreground">{t("approvals.start")}</p>
                     <p className="text-sm font-medium">
                       {format(new Date(leave.startDate), "MMM d, yyyy")}{" "}
                       {leave.startTime}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">End</p>
+                    <p className="text-xs text-muted-foreground">{t("approvals.end")}</p>
                     <p className="text-sm font-medium">
                       {format(new Date(leave.endDate), "MMM d, yyyy")}{" "}
                       {leave.endTime}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Hours</p>
+                    <p className="text-xs text-muted-foreground">{t("approvals.hours")}</p>
                     <p className="text-sm font-medium">{leave.totalHours}h</p>
                   </div>
                   {leave.employee.remainingBalance !== undefined && (
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Remaining Balance
+                        {t("approvals.remainingBalance")}
                       </p>
                       <p className="text-sm font-medium">
                         {leave.employee.remainingBalance}h
@@ -209,7 +211,7 @@ export default function ApprovalsPage() {
 
                 {leave.reason && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Reason</p>
+                    <p className="text-xs text-muted-foreground">{t("approvals.reason")}</p>
                     <p className="mt-1 rounded bg-muted/50 p-2 text-sm">
                       {leave.reason}
                     </p>
@@ -225,14 +227,14 @@ export default function ApprovalsPage() {
                     onClick={() => openRejectDialog(leave.id)}
                   >
                     <XCircle className="size-4" data-icon="inline-start" />
-                    Reject
+                    {t("common.reject")}
                   </Button>
                   <Button
                     disabled={processingId === leave.id}
                     onClick={() => handleApprove(leave.id)}
                   >
                     <CheckCircle className="size-4" data-icon="inline-start" />
-                    Approve
+                    {t("common.approve")}
                   </Button>
                 </div>
               </CardContent>
@@ -245,31 +247,30 @@ export default function ApprovalsPage() {
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Leave Request</DialogTitle>
+            <DialogTitle>{t("approvals.rejectTitle")}</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this leave request. The
-              employee will be notified.
+              {t("approvals.rejectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Reason for Rejection</Label>
+            <Label>{t("approvals.rejectReasonLabel")}</Label>
             <Textarea
               value={rejectComment}
               onChange={(e) => setRejectComment(e.target.value)}
-              placeholder="Enter the reason for rejection..."
+              placeholder={t("approvals.rejectReasonPlaceholder")}
               rows={3}
             />
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
-              Cancel
+              {t("common.cancel")}
             </DialogClose>
             <Button
               variant="destructive"
               disabled={processingId !== null}
               onClick={handleReject}
             >
-              Reject
+              {t("common.reject")}
             </Button>
           </DialogFooter>
         </DialogContent>

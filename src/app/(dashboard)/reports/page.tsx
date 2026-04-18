@@ -47,6 +47,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useT } from "@/lib/i18n/provider";
 
 type ReportType = "daily" | "weekly" | "monthly";
 
@@ -110,6 +111,7 @@ interface Department {
 }
 
 export default function ReportsPage() {
+  const t = useT();
   const [reportType, setReportType] = useState<ReportType>("daily");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [departmentId, setDepartmentId] = useState<string>("ALL");
@@ -169,9 +171,9 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Reports</h1>
+        <h1 className="text-2xl font-bold">{t("reports.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Leave and overtime analytics
+          {t("reports.subtitle")}
         </p>
       </div>
 
@@ -197,10 +199,10 @@ export default function ReportsPage() {
             onValueChange={(val) => setDepartmentId(val ?? "ALL")}
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Departments" />
+              <SelectValue placeholder={t("reports.allDepartments")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Departments</SelectItem>
+              <SelectItem value="ALL">{t("reports.allDepartments")}</SelectItem>
               {departments.map((d) => (
                 <SelectItem key={d.id} value={d.id}>
                   {d.name}
@@ -214,9 +216,9 @@ export default function ReportsPage() {
       {/* Tabs */}
       <Tabs defaultValue={0} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value={0}>Daily</TabsTrigger>
-          <TabsTrigger value={1}>Weekly</TabsTrigger>
-          <TabsTrigger value={2}>Monthly</TabsTrigger>
+          <TabsTrigger value={0}>{t("reports.tabDaily")}</TabsTrigger>
+          <TabsTrigger value={1}>{t("reports.tabWeekly")}</TabsTrigger>
+          <TabsTrigger value={2}>{t("reports.tabMonthly")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={0}>
@@ -248,20 +250,22 @@ export default function ReportsPage() {
 }
 
 function LoadingState() {
+  const t = useT();
   return (
     <div className="flex h-32 items-center justify-center text-muted-foreground">
-      Loading report...
+      {t("reports.loadingReport")}
     </div>
   );
 }
 
 function DailyReport({ data }: { data: DailyData }) {
+  const t = useT();
   return (
     <div className="space-y-4 pt-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Total On Leave</CardTitle>
+            <CardTitle>{t("reports.totalOnLeave")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{data.summary.totalOnLeave}</p>
@@ -269,14 +273,14 @@ function DailyReport({ data }: { data: DailyData }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Total OT</CardTitle>
+            <CardTitle>{t("reports.totalOT")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
               {Math.round(data.summary.totalOtMinutes / 60 * 10) / 10}h
             </p>
             <p className="text-xs text-muted-foreground">
-              {data.summary.totalOtMinutes} minutes
+              {t("reports.minutes").replace("{count}", String(data.summary.totalOtMinutes))}
             </p>
           </CardContent>
         </Card>
@@ -284,20 +288,20 @@ function DailyReport({ data }: { data: DailyData }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Employees on Leave</CardTitle>
+          <CardTitle>{t("reports.employeesOnLeave")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.employees.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No employees on leave this day.
+              {t("reports.noneOnLeave")}
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="text-right">Leave Hours</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("reports.colEmployee")}</TableHead>
+                  <TableHead className="text-right">{t("reports.colLeaveHours")}</TableHead>
+                  <TableHead>{t("reports.colStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -308,7 +312,7 @@ function DailyReport({ data }: { data: DailyData }) {
                       {emp.totalHours}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{emp.status}</Badge>
+                      <Badge variant="secondary">{t(`common.status.${emp.status}`)}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -321,14 +325,14 @@ function DailyReport({ data }: { data: DailyData }) {
       {data.otRecords.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>OT Records</CardTitle>
+            <CardTitle>{t("reports.otRecords")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead className="text-right">OT Minutes</TableHead>
+                  <TableHead>{t("reports.colEmployee")}</TableHead>
+                  <TableHead className="text-right">{t("reports.colOtMinutes")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -350,17 +354,19 @@ function DailyReport({ data }: { data: DailyData }) {
 }
 
 function WeeklyReport({ data }: { data: WeeklyData }) {
+  const t = useT();
   return (
     <div className="space-y-4 pt-4">
       <p className="text-sm text-muted-foreground">
-        Week: {format(new Date(data.weekStart), "MMM d")} &mdash;{" "}
-        {format(new Date(data.weekEnd), "MMM d, yyyy")}
+        {t("reports.week")
+          .replace("{start}", format(new Date(data.weekStart), "MMM d"))
+          .replace("{end}", format(new Date(data.weekEnd), "MMM d, yyyy"))}
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Total Leave</CardTitle>
+            <CardTitle>{t("reports.totalLeave")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -370,7 +376,7 @@ function WeeklyReport({ data }: { data: WeeklyData }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Total OT</CardTitle>
+            <CardTitle>{t("reports.totalOT")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -380,15 +386,16 @@ function WeeklyReport({ data }: { data: WeeklyData }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Approval Rate</CardTitle>
+            <CardTitle>{t("reports.approvalRate")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
               {data.summary.approvalRate}%
             </p>
             <p className="text-xs text-muted-foreground">
-              {data.summary.approvedCount} approved /{" "}
-              {data.summary.rejectedCount} rejected
+              {t("reports.approvedRejected")
+                .replace("{approved}", String(data.summary.approvedCount))
+                .replace("{rejected}", String(data.summary.rejectedCount))}
             </p>
           </CardContent>
         </Card>
@@ -397,7 +404,7 @@ function WeeklyReport({ data }: { data: WeeklyData }) {
       {/* Bar chart: leave hours by day of week */}
       <Card>
         <CardHeader>
-          <CardTitle>Leave Hours by Day</CardTitle>
+          <CardTitle>{t("reports.leaveByDay")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-64">
@@ -420,26 +427,26 @@ function WeeklyReport({ data }: { data: WeeklyData }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Employee Breakdown</CardTitle>
+          <CardTitle>{t("reports.employeeBreakdown")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.employees.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data.</p>
+            <p className="text-sm text-muted-foreground">{t("reports.noData")}</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Employee</TableHead>
+                    <TableHead>{t("reports.colEmployee")}</TableHead>
                     <TableHead className="text-right">
-                      This Week (h)
+                      {t("reports.colThisWeek")}
                     </TableHead>
                     <TableHead className="text-right">
-                      Last Week (h)
+                      {t("reports.colLastWeek")}
                     </TableHead>
-                    <TableHead className="text-right">Delta</TableHead>
+                    <TableHead className="text-right">{t("reports.colDelta")}</TableHead>
                     <TableHead className="text-right">
-                      OT (min)
+                      {t("reports.colOtMin")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -483,6 +490,7 @@ function WeeklyReport({ data }: { data: WeeklyData }) {
 }
 
 function MonthlyReport({ data }: { data: MonthlyData }) {
+  const t = useT();
   const chartData = data.departments.map((d) => ({
     name: d.departmentName,
     hours: d.totalLeaveHours,
@@ -501,24 +509,24 @@ function MonthlyReport({ data }: { data: MonthlyData }) {
       {/* Department summary table */}
       <Card>
         <CardHeader>
-          <CardTitle>Department Summary</CardTitle>
+          <CardTitle>{t("reports.departmentSummary")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.departments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data.</p>
+            <p className="text-sm text-muted-foreground">{t("reports.noData")}</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-right">Employees</TableHead>
+                    <TableHead>{t("reports.colDepartment")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colEmployees")}</TableHead>
                     <TableHead className="text-right">
-                      Leave Hours
+                      {t("reports.colLeaveHours")}
                     </TableHead>
-                    <TableHead className="text-right">OT Hours</TableHead>
+                    <TableHead className="text-right">{t("reports.colOtHours")}</TableHead>
                     <TableHead className="text-right">
-                      Utilization %
+                      {t("reports.colUtilization")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -551,7 +559,7 @@ function MonthlyReport({ data }: { data: MonthlyData }) {
       {chartData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Leave Hours by Department</CardTitle>
+            <CardTitle>{t("reports.leaveByDept")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -577,7 +585,7 @@ function MonthlyReport({ data }: { data: MonthlyData }) {
       {data.topLeaveTakers.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Top 5 Leave Takers</CardTitle>
+            <CardTitle>{t("reports.topLeaveTakers")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
@@ -604,21 +612,21 @@ function MonthlyReport({ data }: { data: MonthlyData }) {
       {deptsWithDeficit.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Uncompensated Flex Deficit</CardTitle>
+            <CardTitle>{t("reports.uncompensatedDeficit")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Department</TableHead>
+                  <TableHead>{t("reports.colDepartment")}</TableHead>
                   <TableHead className="text-right">
-                    Total Deficit (min)
+                    {t("reports.colTotalDeficit")}
                   </TableHead>
                   <TableHead className="text-right">
-                    Total Makeup (min)
+                    {t("reports.colTotalMakeup")}
                   </TableHead>
                   <TableHead className="text-right">
-                    Employees w/ Remaining
+                    {t("reports.colEmployeesRemaining")}
                   </TableHead>
                 </TableRow>
               </TableHeader>

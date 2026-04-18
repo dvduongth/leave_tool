@@ -49,8 +49,8 @@ export async function POST(
 
     // Determine next status based on employee's role
     let nextStatus: LeaveStatus;
-    if (leave.employee.role === Role.MANAGER) {
-      // Managers skip L1, go directly to PENDING_HEAD
+    if (leave.employee.role === Role.MANAGER || leave.employee.role === Role.ADMIN) {
+      // Managers and Admins skip L1, go directly to PENDING_HEAD
       nextStatus = LeaveStatus.PENDING_HEAD;
     } else {
       nextStatus = LeaveStatus.PENDING_MANAGER;
@@ -98,13 +98,28 @@ export async function POST(
         where: { id: leave.employee.departmentId },
         select: { headId: true },
       });
-      if (department?.headId) {
+      if (department?.headId && department.headId !== leave.employeeId) {
         await createNotification(
           department.headId,
           "New leave request pending approval",
           `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
           `/leaves/${id}`
         );
+      } else {
+        // No head set, OR the submitter is themselves the head/admin.
+        // Notify all admins so someone can act on it.
+        const admins = await prisma.employee.findMany({
+          where: { role: Role.ADMIN, id: { not: leave.employeeId } },
+          select: { id: true },
+        });
+        for (const a of admins) {
+          await createNotification(
+            a.id,
+            "New leave request pending approval",
+            `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
+            `/leaves/${id}`
+          );
+        }
       }
     }
 

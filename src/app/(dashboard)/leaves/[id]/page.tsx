@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
 import { TranslateText } from "@/components/translate-text";
+import { useT } from "@/lib/i18n/provider";
 import type { LeaveStatus } from "@/generated/prisma";
 
 // Time slots for edit mode
@@ -91,6 +92,7 @@ interface LeaveDetail {
 export default function LeaveDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const t = useT();
   const id = params.id as string;
 
   const [leave, setLeave] = useState<LeaveDetail | null>(null);
@@ -113,7 +115,7 @@ export default function LeaveDetailPage() {
         const data = await res.json();
         setLeave(data);
       } else {
-        toast.error("Leave request not found.");
+        toast.error(t("leaveDetail.notFound"));
         router.push("/leaves");
       }
     } finally {
@@ -136,7 +138,7 @@ export default function LeaveDetailPage() {
 
   async function handleSaveEdit() {
     if (!editStartDate || parseFloat(editTotalHours) <= 0) {
-      toast.error("Please fill in valid date and hours.");
+      toast.error(t("leaveDetail.errValidDateHours"));
       return;
     }
     setSubmitting(true);
@@ -153,10 +155,10 @@ export default function LeaveDetailPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to update leave.");
+        toast.error(err.error || t("leaveDetail.errUpdate"));
         return;
       }
-      toast.success("Leave updated.");
+      toast.success(t("leaveDetail.toastUpdated"));
       setEditing(false);
       fetchLeave();
     } finally {
@@ -170,10 +172,10 @@ export default function LeaveDetailPage() {
       const res = await fetch(`/api/leaves/${id}/submit`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to submit.");
+        toast.error(err.error || t("leaveDetail.errSubmit"));
         return;
       }
-      toast.success("Leave submitted for approval.");
+      toast.success(t("leaveDetail.toastSubmitted"));
       fetchLeave();
     } finally {
       setSubmitting(false);
@@ -186,10 +188,10 @@ export default function LeaveDetailPage() {
       const res = await fetch(`/api/leaves/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to delete.");
+        toast.error(err.error || t("leaveDetail.errDelete"));
         return;
       }
-      toast.success("Leave deleted.");
+      toast.success(t("leaveDetail.toastDeleted"));
       router.push("/leaves");
     } finally {
       setSubmitting(false);
@@ -202,10 +204,10 @@ export default function LeaveDetailPage() {
       const res = await fetch(`/api/leaves/${id}/cancel`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to cancel.");
+        toast.error(err.error || t("leaveDetail.errCancel"));
         return;
       }
-      toast.success("Cancel request submitted.");
+      toast.success(t("leaveDetail.toastCancelSubmitted"));
       setCancelDialogOpen(false);
       fetchLeave();
     } finally {
@@ -215,7 +217,7 @@ export default function LeaveDetailPage() {
 
   async function handleEditAndResubmit() {
     if (!editStartDate || parseFloat(editTotalHours) <= 0) {
-      toast.error("Please fill in valid date and hours.");
+      toast.error(t("leaveDetail.errValidDateHours"));
       return;
     }
     setSubmitting(true);
@@ -232,7 +234,7 @@ export default function LeaveDetailPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Failed to update.");
+        toast.error(err.error || t("leaveDetail.errUpdate"));
         return;
       }
 
@@ -241,12 +243,12 @@ export default function LeaveDetailPage() {
       });
       if (!submitRes.ok) {
         const err = await submitRes.json().catch(() => ({}));
-        toast.error(err.error || "Updated but failed to submit.");
+        toast.error(err.error || t("leaveDetail.errUpdatedNotSubmitted"));
         fetchLeave();
         return;
       }
 
-      toast.success("Leave updated and resubmitted.");
+      toast.success(t("leaveDetail.toastUpdatedResubmitted"));
       setEditing(false);
       fetchLeave();
     } finally {
@@ -257,7 +259,7 @@ export default function LeaveDetailPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center text-muted-foreground">
-        Loading...
+        {t("common.loading")}
       </div>
     );
   }
@@ -287,9 +289,12 @@ export default function LeaveDetailPage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">Leave Request</h1>
+          <h1 className="text-2xl font-bold">{t("leaveDetail.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Created {format(new Date(leave.createdAt), "MMM d, yyyy 'at' HH:mm")}
+            {t("leaveDetail.createdAt").replace(
+              "{date}",
+              format(new Date(leave.createdAt), "MMM d, yyyy 'at' HH:mm")
+            )}
           </p>
         </div>
         <LeaveStatusBadge status={leave.status} />
@@ -300,14 +305,14 @@ export default function LeaveDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="size-4" />
-            {editing ? "Edit Leave" : "Leave Details"}
+            {editing ? t("leaveDetail.editLeave") : t("leaveDetail.leaveDetails")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {editing ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Start Date</Label>
+                <Label>{t("newLeave.startDate")}</Label>
                 <Popover>
                   <PopoverTrigger
                     className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
@@ -316,7 +321,7 @@ export default function LeaveDetailPage() {
                     {editStartDate ? (
                       format(editStartDate, "EEEE, MMMM d, yyyy")
                     ) : (
-                      <span className="text-muted-foreground">Pick a date</span>
+                      <span className="text-muted-foreground">{t("common.pickDate")}</span>
                     )}
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -334,13 +339,13 @@ export default function LeaveDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Start Time</Label>
+                <Label>{t("newLeave.startTime")}</Label>
                 <Select
                   value={editStartTime}
                   onValueChange={(val) => setEditStartTime(val as string)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select time" />
+                    <SelectValue placeholder={t("newLeave.selectTime")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TIME_SLOTS.map((time) => (
@@ -353,7 +358,7 @@ export default function LeaveDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Total Hours</Label>
+                <Label>{t("leaveDetail.totalHours")}</Label>
                 <Input
                   type="number"
                   min="0.25"
@@ -364,7 +369,7 @@ export default function LeaveDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Reason</Label>
+                <Label>{t("leaveDetail.reason")}</Label>
                 <Textarea
                   value={editReason}
                   onChange={(e) => setEditReason(e.target.value)}
@@ -378,7 +383,7 @@ export default function LeaveDetailPage() {
                   onClick={() => setEditing(false)}
                   disabled={submitting}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 {isRejected ? (
                   <Button
@@ -386,11 +391,11 @@ export default function LeaveDetailPage() {
                     onClick={handleEditAndResubmit}
                   >
                     <Send className="size-4" data-icon="inline-start" />
-                    Save & Resubmit
+                    {t("leaveDetail.saveResubmit")}
                   </Button>
                 ) : (
                   <Button disabled={submitting} onClick={handleSaveEdit}>
-                    Save Changes
+                    {t("leaveDetail.saveChanges")}
                   </Button>
                 )}
               </div>
@@ -399,31 +404,31 @@ export default function LeaveDetailPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Start</p>
+                  <p className="text-xs text-muted-foreground">{t("leaveDetail.start")}</p>
                   <p className="font-medium">
                     {format(new Date(leave.startDate), "MMM d, yyyy")}{" "}
                     {leave.startTime}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">End</p>
+                  <p className="text-xs text-muted-foreground">{t("leaveDetail.end")}</p>
                   <p className="font-medium">
                     {format(new Date(leave.endDate), "MMM d, yyyy")}{" "}
                     {leave.endTime}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Hours</p>
+                  <p className="text-xs text-muted-foreground">{t("leaveDetail.totalHours")}</p>
                   <p className="font-medium">{leave.totalHours}h</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-xs text-muted-foreground">{t("leaveDetail.status")}</p>
                   <LeaveStatusBadge status={leave.status} />
                 </div>
               </div>
               {leave.reason && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Reason</p>
+                  <p className="text-xs text-muted-foreground">{t("leaveDetail.reason")}</p>
                   <TranslateText text={leave.reason} className="text-sm" />
                 </div>
               )}
@@ -438,13 +443,13 @@ export default function LeaveDetailPage() {
           {canEdit && (
             <Button variant="outline" onClick={enterEditMode}>
               <Edit2 className="size-4" data-icon="inline-start" />
-              {isRejected ? "Edit & Resubmit" : "Edit"}
+              {isRejected ? t("leaveDetail.editResubmit") : t("common.edit")}
             </Button>
           )}
           {canSubmit && (
             <Button disabled={submitting} onClick={handleSubmit}>
               <Send className="size-4" data-icon="inline-start" />
-              Submit for Approval
+              {t("leaveDetail.submitApproval")}
             </Button>
           )}
           {canDelete && (
@@ -455,26 +460,25 @@ export default function LeaveDetailPage() {
                 }
               >
                 <Trash2 className="size-4" data-icon="inline-start" />
-                Delete
+                {t("common.delete")}
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Delete Leave Request</DialogTitle>
+                  <DialogTitle>{t("leaveDetail.deleteDialogTitle")}</DialogTitle>
                   <DialogDescription>
-                    This action cannot be undone. The leave request will be
-                    permanently deleted.
+                    {t("leaveDetail.deleteDialogDesc")}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <DialogClose render={<Button variant="outline" />}>
-                    Cancel
+                    {t("common.cancel")}
                   </DialogClose>
                   <Button
                     variant="destructive"
                     disabled={submitting}
                     onClick={handleDelete}
                   >
-                    Delete
+                    {t("common.delete")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -488,31 +492,31 @@ export default function LeaveDetailPage() {
                 }
               >
                 <X className="size-4" data-icon="inline-start" />
-                {canRequestCancel ? "Request Cancel" : "Cancel Request"}
+                {canRequestCancel ? t("leaveDetail.requestCancel") : t("leaveDetail.cancelRequest")}
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
                     {canRequestCancel
-                      ? "Request Cancellation"
-                      : "Cancel Leave Request"}
+                      ? t("leaveDetail.cancelDialogTitleRequest")
+                      : t("leaveDetail.cancelDialogTitleCancel")}
                   </DialogTitle>
                   <DialogDescription>
                     {canRequestCancel
-                      ? "This will submit a cancellation request for this approved leave."
-                      : "This will cancel your pending leave request."}
+                      ? t("leaveDetail.cancelDialogDescRequest")
+                      : t("leaveDetail.cancelDialogDescCancel")}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <DialogClose render={<Button variant="outline" />}>
-                    Go Back
+                    {t("common.goBack")}
                   </DialogClose>
                   <Button
                     variant="destructive"
                     disabled={submitting}
                     onClick={handleCancel}
                   >
-                    Confirm
+                    {t("common.confirm")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -527,7 +531,7 @@ export default function LeaveDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="size-4" />
-              Approval Timeline
+              {t("leaveDetail.approvalTimeline")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -545,7 +549,7 @@ export default function LeaveDetailPage() {
                   <div className="flex-1 pb-4">
                     <div className="flex items-baseline gap-2">
                       <p className="text-sm font-medium">
-                        {entry.actor?.name || "System"}
+                        {entry.actor?.name || t("leaveDetail.system")}
                       </p>
                       <span className="text-xs text-muted-foreground">
                         {format(

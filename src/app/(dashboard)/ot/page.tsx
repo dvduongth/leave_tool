@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useT } from "@/lib/i18n/provider";
 
 interface OTRecord {
   id: string;
@@ -56,6 +57,7 @@ function getStatusVariant(status: string) {
 }
 
 export default function OTPage() {
+  const t = useT();
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -78,7 +80,7 @@ export default function OTPage() {
       if (res.ok) {
         setRecords(await res.json());
       } else {
-        toast.error("Failed to load OT records");
+        toast.error(t("ot.errLoadFailed"));
       }
     } finally {
       setLoading(false);
@@ -96,11 +98,11 @@ export default function OTPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formDate) {
-      toast.error("Date is required");
+      toast.error(t("ot.errDateRequired"));
       return;
     }
     if (!formStart || !formEnd) {
-      toast.error("Start and end times are required");
+      toast.error(t("ot.errTimesRequired"));
       return;
     }
     setSubmitting(true);
@@ -116,7 +118,7 @@ export default function OTPage() {
         }),
       });
       if (res.ok) {
-        toast.success("OT record created");
+        toast.success(t("ot.toastCreated"));
         setDialogOpen(false);
         setFormDate(undefined);
         setFormStart("18:00");
@@ -125,10 +127,10 @@ export default function OTPage() {
         fetchRecords();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to create OT record");
+        toast.error(data.error || t("ot.errCreateFailed"));
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
     }
@@ -138,14 +140,14 @@ export default function OTPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Overtime Records</h1>
+          <h1 className="text-2xl font-bold">{t("ot.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Track and manage your overtime hours
+            {t("ot.subtitle")}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="size-4" data-icon="inline-start" />
-          Record OT
+          {t("ot.recordOT")}
         </Button>
       </div>
 
@@ -159,9 +161,12 @@ export default function OTPage() {
         <Card className="flex-1">
           <CardContent className="flex items-center gap-2 py-3">
             <Clock className="size-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Monthly Total:</span>
+            <span className="text-sm font-medium">{t("ot.monthlyTotal")}</span>
             <span className="text-sm">
-              {totalHours}h {remainingMinutes}m ({totalMinutes} minutes)
+              {t("ot.totalFormat")
+                .replace("{h}", String(totalHours))
+                .replace("{m}", String(remainingMinutes))
+                .replace("{total}", String(totalMinutes))}
             </span>
           </CardContent>
         </Card>
@@ -171,12 +176,12 @@ export default function OTPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>OT Start</TableHead>
-              <TableHead>OT End</TableHead>
-              <TableHead className="text-right">Minutes</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Note</TableHead>
+              <TableHead>{t("ot.colDate")}</TableHead>
+              <TableHead>{t("ot.colOtStart")}</TableHead>
+              <TableHead>{t("ot.colOtEnd")}</TableHead>
+              <TableHead className="text-right">{t("ot.colMinutes")}</TableHead>
+              <TableHead>{t("ot.colStatus")}</TableHead>
+              <TableHead>{t("ot.colNote")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -186,7 +191,7 @@ export default function OTPage() {
                   colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  Loading...
+                  {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : records.length === 0 ? (
@@ -195,7 +200,7 @@ export default function OTPage() {
                   colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No OT records for this month.
+                  {t("ot.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -211,7 +216,7 @@ export default function OTPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusVariant(record.status)}>
-                      {record.status}
+                      {t(`common.status.${record.status}`)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground max-w-[200px] truncate">
@@ -228,14 +233,14 @@ export default function OTPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Record Overtime</DialogTitle>
+            <DialogTitle>{t("ot.dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Log your overtime work hours.
+              {t("ot.dialogDesc")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("ot.colDate")}</Label>
               <Popover>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
@@ -243,7 +248,7 @@ export default function OTPage() {
                   <CalendarIcon className="size-4" />
                   {formDate
                     ? format(formDate, "MMM d, yyyy")
-                    : "Pick a date"}
+                    : t("common.pickDate")}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
@@ -256,7 +261,7 @@ export default function OTPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ot-start">Start Time</Label>
+                <Label htmlFor="ot-start">{t("ot.startTime")}</Label>
                 <Input
                   id="ot-start"
                   type="time"
@@ -266,7 +271,7 @@ export default function OTPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ot-end">End Time</Label>
+                <Label htmlFor="ot-end">{t("ot.endTime")}</Label>
                 <Input
                   id="ot-end"
                   type="time"
@@ -277,18 +282,18 @@ export default function OTPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ot-note">Note (optional)</Label>
+              <Label htmlFor="ot-note">{t("ot.noteOptional")}</Label>
               <Textarea
                 id="ot-note"
                 value={formNote}
                 onChange={(e) => setFormNote(e.target.value)}
-                placeholder="What did you work on?"
+                placeholder={t("ot.notePlaceholder")}
                 rows={3}
               />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Saving..." : "Submit"}
+                {submitting ? t("common.saving") : t("common.submit")}
               </Button>
             </DialogFooter>
           </form>

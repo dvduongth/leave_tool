@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useT } from "@/lib/i18n/provider";
 
 interface Holiday {
   id: string;
@@ -42,6 +43,7 @@ interface Holiday {
 }
 
 export default function AdminHolidaysPage() {
+  const t = useT();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
 
@@ -64,7 +66,7 @@ export default function AdminHolidaysPage() {
       if (res.ok) {
         setHolidays(await res.json());
       } else {
-        toast.error("Failed to load holidays");
+        toast.error(t("admin.holidays.errLoadFailed"));
       }
     } finally {
       setLoading(false);
@@ -80,7 +82,7 @@ export default function AdminHolidaysPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!formDate || !formName) {
-      toast.error("Date and name are required");
+      toast.error(t("admin.holidays.errDateNameRequired"));
       return;
     }
     setSubmitting(true);
@@ -95,17 +97,17 @@ export default function AdminHolidaysPage() {
         }),
       });
       if (res.ok) {
-        toast.success("Holiday created");
+        toast.success(t("admin.holidays.toastCreated"));
         setDialogOpen(false);
         setFormDate(undefined);
         setFormName("");
         fetchHolidays();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to create holiday");
+        toast.error(data.error || t("admin.holidays.errCreate"));
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
     }
@@ -117,22 +119,22 @@ export default function AdminHolidaysPage() {
         method: "DELETE",
       });
       if (res.ok) {
-        toast.success("Holiday deleted");
+        toast.success(t("admin.holidays.toastDeleted"));
         setDeleteConfirmId(null);
         fetchHolidays();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to delete holiday");
+        toast.error(data.error || t("admin.holidays.errDelete"));
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     }
   }
 
   if (role !== "ADMIN") {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-lg text-muted-foreground">Access Denied</p>
+        <p className="text-lg text-muted-foreground">{t("common.accessDenied")}</p>
       </div>
     );
   }
@@ -145,14 +147,14 @@ export default function AdminHolidaysPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Holiday Management</h1>
+          <h1 className="text-2xl font-bold">{t("admin.holidays.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage company holidays
+            {t("admin.holidays.subtitle")}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="size-4" data-icon="inline-start" />
-          Add Holiday
+          {t("admin.holidays.add")}
         </Button>
       </div>
 
@@ -175,9 +177,9 @@ export default function AdminHolidaysPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              <TableHead>{t("admin.holidays.colDate")}</TableHead>
+              <TableHead>{t("admin.holidays.colName")}</TableHead>
+              <TableHead className="w-20">{t("admin.holidays.colActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -187,7 +189,7 @@ export default function AdminHolidaysPage() {
                   colSpan={3}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  Loading...
+                  {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : holidays.length === 0 ? (
@@ -196,7 +198,7 @@ export default function AdminHolidaysPage() {
                   colSpan={3}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No holidays for this year.
+                  {t("admin.holidays.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -226,14 +228,14 @@ export default function AdminHolidaysPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Holiday</DialogTitle>
+            <DialogTitle>{t("admin.holidays.addTitle")}</DialogTitle>
             <DialogDescription>
-              Add a new company holiday for {year}.
+              {t("admin.holidays.addDesc").replace("{year}", year)}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("admin.holidays.colDate")}</Label>
               <Popover>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
@@ -241,7 +243,7 @@ export default function AdminHolidaysPage() {
                   <CalendarIcon className="size-4" />
                   {formDate
                     ? format(formDate, "MMM d, yyyy")
-                    : "Pick a date"}
+                    : t("common.pickDate")}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
@@ -253,18 +255,18 @@ export default function AdminHolidaysPage() {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="holiday-name">Name</Label>
+              <Label htmlFor="holiday-name">{t("admin.holidays.name")}</Label>
               <Input
                 id="holiday-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                placeholder="e.g. Tet Holiday"
+                placeholder={t("admin.holidays.namePlaceholder")}
                 required
               />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Creating..." : "Create"}
+                {submitting ? t("admin.holidays.creating") : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -278,10 +280,9 @@ export default function AdminHolidaysPage() {
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete Holiday</DialogTitle>
+            <DialogTitle>{t("admin.holidays.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this holiday? This action cannot be
-              undone.
+              {t("admin.holidays.deleteDesc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -289,13 +290,13 @@ export default function AdminHolidaysPage() {
               variant="outline"
               onClick={() => setDeleteConfirmId(null)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
             >
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

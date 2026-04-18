@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useT } from "@/lib/i18n/provider";
 
 interface Employee {
   id: string;
@@ -52,6 +53,7 @@ const ROLES = ["EMPLOYEE", "MANAGER", "HEAD", "ADMIN"];
 const SHIFTS = ["A", "B", "C"];
 
 export default function AdminEmployeesPage() {
+  const t = useT();
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role;
 
@@ -81,7 +83,7 @@ export default function AdminEmployeesPage() {
         const data = await res.json();
         setEmployees(data);
       } else {
-        toast.error("Failed to load employees");
+        toast.error(t("admin.employees.errLoadFailed"));
       }
     } finally {
       setLoading(false);
@@ -172,22 +174,22 @@ export default function AdminEmployeesPage() {
           }
         );
         if (res.ok) {
-          toast.success("Employee updated successfully");
+          toast.success(t("admin.employees.toastUpdated"));
           setDialogOpen(false);
           fetchEmployees();
         } else {
           const data = await res.json();
-          toast.error(data.error || "Failed to update employee");
+          toast.error(data.error || t("admin.employees.errUpdate"));
         }
       } else {
         // Create
         if (!formPassword) {
-          toast.error("Password is required for new employees");
+          toast.error(t("admin.employees.errPasswordRequired"));
           setSubmitting(false);
           return;
         }
         if (!formDepartment) {
-          toast.error("Department is required");
+          toast.error(t("admin.employees.errDepartmentRequired"));
           setSubmitting(false);
           return;
         }
@@ -206,16 +208,16 @@ export default function AdminEmployeesPage() {
           }),
         });
         if (res.ok) {
-          toast.success("Employee created successfully");
+          toast.success(t("admin.employees.toastCreated"));
           setDialogOpen(false);
           fetchEmployees();
         } else {
           const data = await res.json();
-          toast.error(data.error || "Failed to create employee");
+          toast.error(data.error || t("admin.employees.errCreate"));
         }
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
     }
@@ -224,7 +226,7 @@ export default function AdminEmployeesPage() {
   async function handleDelete() {
     if (!editingEmployee) return;
     const ok = window.confirm(
-      `Xoá nhân viên "${editingEmployee.name}"?\n\nThao tác này không thể hoàn tác. Nếu nhân viên có dữ liệu nghỉ phép/OT/flex trong lịch sử, hệ thống sẽ chặn và gợi ý vô hiệu hoá thay vì xoá.`
+      t("admin.employees.confirmDelete").replace("{name}", editingEmployee.name)
     );
     if (!ok) return;
 
@@ -234,15 +236,15 @@ export default function AdminEmployeesPage() {
         method: "DELETE",
       });
       if (res.ok) {
-        toast.success("Đã xoá nhân viên");
+        toast.success(t("admin.employees.toastDeleted"));
         setDialogOpen(false);
         fetchEmployees();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Không thể xoá nhân viên");
+        toast.error(data.error || t("admin.employees.errDelete"));
       }
     } catch {
-      toast.error("Có lỗi xảy ra khi xoá");
+      toast.error(t("admin.employees.errDeleteGeneric"));
     } finally {
       setDeleting(false);
     }
@@ -251,7 +253,7 @@ export default function AdminEmployeesPage() {
   if (role !== "ADMIN") {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-lg text-muted-foreground">Access Denied</p>
+        <p className="text-lg text-muted-foreground">{t("common.accessDenied")}</p>
       </div>
     );
   }
@@ -260,14 +262,14 @@ export default function AdminEmployeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Employee Management</h1>
+          <h1 className="text-2xl font-bold">{t("admin.employees.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Manage employee accounts and assignments
+            {t("admin.employees.subtitle")}
           </p>
         </div>
         <Button onClick={openAddDialog}>
           <Plus className="size-4" data-icon="inline-start" />
-          Add Employee
+          {t("admin.employees.add")}
         </Button>
       </div>
 
@@ -275,12 +277,12 @@ export default function AdminEmployeesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Shift</TableHead>
-              <TableHead>Manager</TableHead>
+              <TableHead>{t("admin.employees.colName")}</TableHead>
+              <TableHead>{t("admin.employees.colEmail")}</TableHead>
+              <TableHead>{t("admin.employees.colRole")}</TableHead>
+              <TableHead>{t("admin.employees.colDepartment")}</TableHead>
+              <TableHead>{t("admin.employees.colShift")}</TableHead>
+              <TableHead>{t("admin.employees.colManager")}</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -291,7 +293,7 @@ export default function AdminEmployeesPage() {
                   colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  Loading...
+                  {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : employees.length === 0 ? (
@@ -300,7 +302,7 @@ export default function AdminEmployeesPage() {
                   colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  No employees found.
+                  {t("admin.employees.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -330,17 +332,17 @@ export default function AdminEmployeesPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingEmployee ? "Edit Employee" : "Add Employee"}
+              {editingEmployee ? t("admin.employees.editTitle") : t("admin.employees.addTitle")}
             </DialogTitle>
             <DialogDescription>
               {editingEmployee
-                ? "Update employee information. Leave password blank to keep current."
-                : "Create a new employee account."}
+                ? t("admin.employees.editDesc")
+                : t("admin.employees.addDesc")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="emp-name">Name</Label>
+              <Label htmlFor="emp-name">{t("admin.employees.name")}</Label>
               <Input
                 id="emp-name"
                 value={formName}
@@ -349,7 +351,7 @@ export default function AdminEmployeesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="emp-email">Email</Label>
+              <Label htmlFor="emp-email">{t("admin.employees.email")}</Label>
               <Input
                 id="emp-email"
                 type="email"
@@ -360,7 +362,7 @@ export default function AdminEmployeesPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="emp-password">
-                Password{editingEmployee ? " (leave blank to keep)" : ""}
+                {t("admin.employees.password")}{editingEmployee ? t("admin.employees.passwordKeepHint") : ""}
               </Label>
               <Input
                 id="emp-password"
@@ -372,7 +374,7 @@ export default function AdminEmployeesPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Role</Label>
+                <Label>{t("admin.employees.role")}</Label>
                 <Select value={formRole} onValueChange={(val) => setFormRole(val as string)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -387,7 +389,7 @@ export default function AdminEmployeesPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Shift</Label>
+                <Label>{t("admin.employees.shift")}</Label>
                 <Select value={formShift} onValueChange={(val) => setFormShift(val as string)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -395,7 +397,7 @@ export default function AdminEmployeesPage() {
                   <SelectContent>
                     {SHIFTS.map((s) => (
                       <SelectItem key={s} value={s}>
-                        Shift {s}
+                        {t("admin.employees.shiftValue").replace("{s}", s)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -403,10 +405,10 @@ export default function AdminEmployeesPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Department</Label>
+              <Label>{t("admin.employees.department")}</Label>
               <Select value={formDepartment} onValueChange={(val) => setFormDepartment(val as string)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder={t("admin.employees.selectDepartment")} />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((d) => (
@@ -418,13 +420,13 @@ export default function AdminEmployeesPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Manager (optional)</Label>
+              <Label>{t("admin.employees.managerOptional")}</Label>
               <Select value={formManager} onValueChange={(val) => setFormManager(val as string)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="No manager" />
+                  <SelectValue placeholder={t("admin.employees.noManager")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="">{t("common.none")}</SelectItem>
                   {managers.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name}
@@ -442,17 +444,17 @@ export default function AdminEmployeesPage() {
                   onClick={handleDelete}
                 >
                   <Trash2 className="size-4" data-icon="inline-start" />
-                  {deleting ? "Đang xoá..." : "Xoá"}
+                  {deleting ? t("admin.employees.deleting") : t("common.delete")}
                 </Button>
               ) : (
                 <span />
               )}
               <Button type="submit" disabled={submitting || deleting}>
                 {submitting
-                  ? "Saving..."
+                  ? t("common.saving")
                   : editingEmployee
-                    ? "Update"
-                    : "Create"}
+                    ? t("common.update")
+                    : t("common.create")}
               </Button>
             </DialogFooter>
           </form>

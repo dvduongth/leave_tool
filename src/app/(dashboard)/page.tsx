@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useT } from "@/lib/i18n/provider";
 
 interface DashboardData {
   balance: {
@@ -69,6 +70,7 @@ interface DashboardData {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const t = useT();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +84,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center text-muted-foreground">
-        Loading dashboard...
+        {t("dashboard.loading")}
       </div>
     );
   }
@@ -90,7 +92,7 @@ export default function DashboardPage() {
   if (!data) {
     return (
       <div className="flex h-48 items-center justify-center text-destructive">
-        Failed to load dashboard data.
+        {t("dashboard.loadFailed")}
       </div>
     );
   }
@@ -99,12 +101,16 @@ export default function DashboardPage() {
     data.role === "MANAGER" || data.role === "HEAD";
   const isAdmin = data.role === "ADMIN";
 
+  const statusLabel = (s: string) => t(`common.status.${s}`);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Welcome, {data.userName}</h1>
+        <h1 className="text-2xl font-bold">
+          {t("dashboard.welcome").replace("{name}", data.userName)}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Role:{" "}
+          {t("dashboard.role")}:{" "}
           <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             {data.role}
           </span>
@@ -134,26 +140,26 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="size-4 text-primary" />
-              Leave Balance
+              {t("dashboard.leaveBalance")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {data.balance ? (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-muted-foreground">{t("dashboard.total")}</span>
                   <span className="font-medium">
                     {data.balance.totalHours}h
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Used</span>
+                  <span className="text-muted-foreground">{t("dashboard.used")}</span>
                   <span className="font-medium">
                     {data.balance.usedHours}h
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="text-muted-foreground">{t("dashboard.remaining")}</span>
                   <span className="font-bold text-primary">
                     {data.balance.remainingHours}h
                   </span>
@@ -168,29 +174,31 @@ export default function DashboardPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {Math.round(
-                    (data.balance.usedHours / data.balance.totalHours) * 100
+                  {t("dashboard.percentUsed").replace(
+                    "{percent}",
+                    String(Math.round((data.balance.usedHours / data.balance.totalHours) * 100))
                   )}
-                  % used
                 </p>
                 {data.balance.graceBalance && (
                   <div className="mt-2 rounded-md border border-dashed p-2">
-                    <p className="text-xs font-medium">Grace Period</p>
+                    <p className="text-xs font-medium">{t("dashboard.gracePeriod")}</p>
                     <p className="text-xs text-muted-foreground">
-                      {data.balance.graceBalance.remainingHours}h remaining
-                      (expires{" "}
-                      {format(
-                        new Date(data.balance.graceBalance.graceDeadline),
-                        "MMM d, yyyy"
-                      )}
-                      )
+                      {t("dashboard.graceRemaining")
+                        .replace("{hours}", String(data.balance.graceBalance.remainingHours))
+                        .replace(
+                          "{date}",
+                          format(
+                            new Date(data.balance.graceBalance.graceDeadline),
+                            "MMM d, yyyy"
+                          )
+                        )}
                     </p>
                   </div>
                 )}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No active balance found.
+                {t("dashboard.noBalance")}
               </p>
             )}
           </CardContent>
@@ -201,25 +209,25 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="size-4 text-primary" />
-              Flex Time Status
+              {t("dashboard.flexTimeStatus")}
             </CardTitle>
             <CardDescription>{data.flexTime.yearMonth}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Deficit</span>
+              <span className="text-muted-foreground">{t("dashboard.deficit")}</span>
               <span className="font-medium">
                 {data.flexTime.totalDeficit} min
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Makeup</span>
+              <span className="text-muted-foreground">{t("dashboard.makeup")}</span>
               <span className="font-medium">
                 {data.flexTime.totalMakeup} min
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Remaining</span>
+              <span className="text-muted-foreground">{t("dashboard.remaining")}</span>
               <span className="font-bold">
                 {data.flexTime.remaining} min
               </span>
@@ -231,7 +239,7 @@ export default function DashboardPage() {
                   : "default"
               }
             >
-              {data.flexTime.status}
+              {statusLabel(data.flexTime.status)}
             </Badge>
           </CardContent>
         </Card>
@@ -242,20 +250,20 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="size-4 text-primary" />
-                Pending Approvals
+                {t("dashboard.pendingApprovals")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-3xl font-bold">{data.pendingCount}</p>
               <p className="text-sm text-muted-foreground">
-                requests awaiting your action
+                {t("dashboard.requestsAwaiting")}
               </p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => router.push("/approvals")}
               >
-                Review
+                {t("dashboard.review")}
               </Button>
             </CardContent>
           </Card>
@@ -267,18 +275,21 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="size-4 text-primary" />
-                Today&apos;s Absences
+                {t("dashboard.todaysAbsences")}
               </CardTitle>
               {isManagerOrHead && (
                 <CardDescription>
-                  Team size: {data.teamOrDeptSize}
+                  {t("dashboard.teamSize").replace(
+                    "{count}",
+                    String(data.teamOrDeptSize)
+                  )}
                 </CardDescription>
               )}
             </CardHeader>
             <CardContent>
               {data.todayAbsences.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No one is on leave today.
+                  {t("dashboard.noAbsencesToday")}
                 </p>
               ) : (
                 <ul className="space-y-1">
@@ -305,25 +316,25 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="size-4 text-primary" />
-                Company Stats
+                {t("dashboard.companyStats")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Total Employees
+                  {t("dashboard.totalEmployees")}
                 </span>
                 <span className="font-medium">{data.totalEmployees}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">On Leave Today</span>
+                <span className="text-muted-foreground">{t("dashboard.onLeaveToday")}</span>
                 <span className="font-medium">
                   {data.todayAbsences.length}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Pending Requests
+                  {t("dashboard.pendingRequests")}
                 </span>
                 <span className="font-medium">{data.pendingCount}</span>
               </div>
@@ -335,24 +346,24 @@ export default function DashboardPage() {
       {/* Recent Leaves */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Leaves</CardTitle>
-          <CardDescription>Your last 5 leave requests</CardDescription>
+          <CardTitle>{t("dashboard.recentLeaves")}</CardTitle>
+          <CardDescription>{t("dashboard.recentLeavesDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {data.recentLeaves.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No leave requests yet.
+              {t("dashboard.noLeavesYet")}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Start</TableHead>
-                    <TableHead>End</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Reason</TableHead>
+                    <TableHead>{t("dashboard.colStart")}</TableHead>
+                    <TableHead>{t("dashboard.colEnd")}</TableHead>
+                    <TableHead className="text-right">{t("dashboard.colHours")}</TableHead>
+                    <TableHead>{t("dashboard.colStatus")}</TableHead>
+                    <TableHead>{t("dashboard.colReason")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -381,7 +392,7 @@ export default function DashboardPage() {
                                 : "secondary"
                           }
                         >
-                          {leave.status.replace("_", " ")}
+                          {statusLabel(leave.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-muted-foreground">

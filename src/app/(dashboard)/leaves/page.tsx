@@ -23,6 +23,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
+import { useT } from "@/lib/i18n/provider";
 import type { LeaveStatus } from "@/generated/prisma";
 
 interface LeaveRow {
@@ -35,19 +36,20 @@ interface LeaveRow {
   reason: string | null;
 }
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "ALL", label: "All Statuses" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "PENDING_MANAGER", label: "Pending Manager" },
-  { value: "PENDING_HEAD", label: "Pending Head" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
-  { value: "CANCEL_PENDING", label: "Cancel Pending" },
+const STATUS_VALUES = [
+  "ALL",
+  "DRAFT",
+  "PENDING_MANAGER",
+  "PENDING_HEAD",
+  "APPROVED",
+  "REJECTED",
+  "CANCELLED",
+  "CANCEL_PENDING",
 ];
 
 export default function LeavesPage() {
   const router = useRouter();
+  const t = useT();
   const [leaves, setLeaves] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -80,14 +82,14 @@ export default function LeavesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Leaves</h1>
+          <h1 className="text-2xl font-bold">{t("leaves.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            View and manage your leave requests
+            {t("leaves.subtitle")}
           </p>
         </div>
         <Button onClick={() => router.push("/leaves/new")}>
           <Plus className="size-4" data-icon="inline-start" />
-          New Leave
+          {t("leaves.newLeave")}
         </Button>
       </div>
 
@@ -98,12 +100,12 @@ export default function LeavesPage() {
           onValueChange={(val) => setStatusFilter(val as string)}
         >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder={t("leaves.filterByStatus")} />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+            {STATUS_VALUES.map((v) => (
+              <SelectItem key={v} value={v}>
+                {t(`common.status.${v}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -114,7 +116,7 @@ export default function LeavesPage() {
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted"
           >
             <CalendarIcon className="size-4" />
-            {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From date"}
+            {dateFrom ? format(dateFrom, "MMM d, yyyy") : t("common.fromDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -130,7 +132,7 @@ export default function LeavesPage() {
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted"
           >
             <CalendarIcon className="size-4" />
-            {dateTo ? format(dateTo, "MMM d, yyyy") : "To date"}
+            {dateTo ? format(dateTo, "MMM d, yyyy") : t("common.toDate")}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
@@ -151,7 +153,7 @@ export default function LeavesPage() {
               setDateTo(undefined);
             }}
           >
-            Clear filters
+            {t("common.clearFilters")}
           </Button>
         )}
       </div>
@@ -161,11 +163,11 @@ export default function LeavesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead className="text-right">Hours</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>{t("leaves.colStartDate")}</TableHead>
+              <TableHead>{t("leaves.colEndDate")}</TableHead>
+              <TableHead className="text-right">{t("leaves.colHours")}</TableHead>
+              <TableHead>{t("leaves.colStatus")}</TableHead>
+              <TableHead>{t("leaves.colCreated")}</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -173,13 +175,13 @@ export default function LeavesPage() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                  Loading...
+                  {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : leaves.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                  No leave requests found.
+                  {t("leaves.empty")}
                 </TableCell>
               </TableRow>
             ) : (

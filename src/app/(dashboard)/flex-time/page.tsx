@@ -41,6 +41,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
+import { useT } from "@/lib/i18n/provider";
 
 interface FlexRecord {
   id: string;
@@ -71,6 +72,7 @@ function getStatusVariant(status: string) {
 }
 
 export default function FlexTimePage() {
+  const t = useT();
   const { data: session } = useSession();
   const userRole = (session?.user as { role?: string } | undefined)?.role;
   const isApprover = userRole === "MANAGER" || userRole === "HEAD";
@@ -109,7 +111,7 @@ export default function FlexTimePage() {
         setSummary(await summaryRes.json());
       }
     } catch {
-      toast.error("Failed to load flex time data");
+      toast.error(t("flex.errLoadFailed"));
     } finally {
       setLoading(false);
     }
@@ -143,12 +145,12 @@ export default function FlexTimePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formDate || !formMinutes) {
-      toast.error("Date and minutes are required");
+      toast.error(t("flex.errDateMinutes"));
       return;
     }
     const minutes = parseInt(formMinutes, 10);
     if (isNaN(minutes) || minutes <= 0) {
-      toast.error("Minutes must be a positive number");
+      toast.error(t("flex.errPositive"));
       return;
     }
     setSubmitting(true);
@@ -166,8 +168,8 @@ export default function FlexTimePage() {
       if (res.ok) {
         toast.success(
           dialogType === "DEFICIT"
-            ? "Late arrival recorded"
-            : "Makeup time recorded"
+            ? t("flex.toastLate")
+            : t("flex.toastMakeup")
         );
         setDialogType(null);
         setFormDate(undefined);
@@ -176,10 +178,10 @@ export default function FlexTimePage() {
         fetchData();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to create record");
+        toast.error(data.error || t("flex.errCreate"));
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
     }
@@ -193,15 +195,15 @@ export default function FlexTimePage() {
         body: JSON.stringify({ recordId, action }),
       });
       if (res.ok) {
-        toast.success(`Record ${action.toLowerCase()}`);
+        toast.success(action === "APPROVED" ? t("flex.toastApproved") : t("flex.toastRejected"));
         fetchData();
         fetchPending();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to process approval");
+        toast.error(data.error || t("flex.errApprove"));
       }
     } catch {
-      toast.error("An unexpected error occurred");
+      toast.error(t("common.unexpectedError"));
     }
   }
 
@@ -209,19 +211,19 @@ export default function FlexTimePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Flex Time</h1>
+          <h1 className="text-2xl font-bold">{t("flex.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Track late arrivals and makeup time
+            {t("flex.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setDialogType("DEFICIT")}>
             <Plus className="size-4" data-icon="inline-start" />
-            Record Late Arrival
+            {t("flex.recordLate")}
           </Button>
           <Button onClick={() => setDialogType("MAKEUP")}>
             <Plus className="size-4" data-icon="inline-start" />
-            Record Makeup
+            {t("flex.recordMakeup")}
           </Button>
         </div>
       </div>
@@ -239,31 +241,31 @@ export default function FlexTimePage() {
       {summary && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Monthly Summary</CardTitle>
+            <CardTitle className="text-lg">{t("flex.monthlySummary")}</CardTitle>
             <CardDescription>
-              {month} - Status:{" "}
+              {month} - {t("flex.statusLabel")}
               <Badge variant={summary.status === "OPEN" ? "secondary" : "default"}>
-                {summary.status}
+                {t(`common.status.${summary.status}`)}
               </Badge>
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <p className="text-sm text-muted-foreground">Total Deficit</p>
+                <p className="text-sm text-muted-foreground">{t("flex.totalDeficit")}</p>
                 <p className="text-xl font-semibold">{summary.totalDeficit}m</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Makeup</p>
+                <p className="text-sm text-muted-foreground">{t("flex.totalMakeup")}</p>
                 <p className="text-xl font-semibold">{summary.totalMakeup}m</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Remaining</p>
+                <p className="text-sm text-muted-foreground">{t("flex.remaining")}</p>
                 <p className="text-xl font-semibold">{summary.remaining}m</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <p className="text-xl font-semibold">{summary.status}</p>
+                <p className="text-sm text-muted-foreground">{t("flex.status")}</p>
+                <p className="text-xl font-semibold">{t(`common.status.${summary.status}`)}</p>
               </div>
             </div>
           </CardContent>
@@ -274,14 +276,14 @@ export default function FlexTimePage() {
       <Tabs defaultValue="deficit">
         <TabsList>
           <TabsTrigger value="deficit">
-            Deficit Records ({deficitRecords.length})
+            {t("flex.tabDeficit").replace("{count}", String(deficitRecords.length))}
           </TabsTrigger>
           <TabsTrigger value="makeup">
-            Makeup Records ({makeupRecords.length})
+            {t("flex.tabMakeup").replace("{count}", String(makeupRecords.length))}
           </TabsTrigger>
           {isApprover && (
             <TabsTrigger value="pending">
-              Pending Approvals ({pendingRecords.length})
+              {t("flex.tabPending").replace("{count}", String(pendingRecords.length))}
             </TabsTrigger>
           )}
         </TabsList>
@@ -291,10 +293,10 @@ export default function FlexTimePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Minutes</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("flex.colDate")}</TableHead>
+                  <TableHead className="text-right">{t("flex.colMinutes")}</TableHead>
+                  <TableHead>{t("flex.colReason")}</TableHead>
+                  <TableHead>{t("flex.colStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -304,7 +306,7 @@ export default function FlexTimePage() {
                       colSpan={4}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Loading...
+                      {t("common.loading")}
                     </TableCell>
                   </TableRow>
                 ) : deficitRecords.length === 0 ? (
@@ -313,7 +315,7 @@ export default function FlexTimePage() {
                       colSpan={4}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      No deficit records this month.
+                      {t("flex.emptyDeficit")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -328,7 +330,7 @@ export default function FlexTimePage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(r.status)}>
-                          {r.status}
+                          {t(`common.status.${r.status}`)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -344,10 +346,10 @@ export default function FlexTimePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Minutes</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("flex.colDate")}</TableHead>
+                  <TableHead className="text-right">{t("flex.colMinutes")}</TableHead>
+                  <TableHead>{t("flex.colReason")}</TableHead>
+                  <TableHead>{t("flex.colStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -357,7 +359,7 @@ export default function FlexTimePage() {
                       colSpan={4}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Loading...
+                      {t("common.loading")}
                     </TableCell>
                   </TableRow>
                 ) : makeupRecords.length === 0 ? (
@@ -366,7 +368,7 @@ export default function FlexTimePage() {
                       colSpan={4}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      No makeup records this month.
+                      {t("flex.emptyMakeup")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -381,7 +383,7 @@ export default function FlexTimePage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(r.status)}>
-                          {r.status}
+                          {t(`common.status.${r.status}`)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -398,12 +400,12 @@ export default function FlexTimePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Minutes</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t("flex.colEmployee")}</TableHead>
+                    <TableHead>{t("flex.colType")}</TableHead>
+                    <TableHead>{t("flex.colDate")}</TableHead>
+                    <TableHead className="text-right">{t("flex.colMinutes")}</TableHead>
+                    <TableHead>{t("flex.colReason")}</TableHead>
+                    <TableHead>{t("flex.colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -413,7 +415,7 @@ export default function FlexTimePage() {
                         colSpan={6}
                         className="h-24 text-center text-muted-foreground"
                       >
-                        No pending records to review.
+                        {t("flex.emptyPending")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -481,18 +483,18 @@ export default function FlexTimePage() {
           <DialogHeader>
             <DialogTitle>
               {dialogType === "DEFICIT"
-                ? "Record Late Arrival"
-                : "Record Makeup Time"}
+                ? t("flex.dialogLateTitle")
+                : t("flex.dialogMakeupTitle")}
             </DialogTitle>
             <DialogDescription>
               {dialogType === "DEFICIT"
-                ? "Log a late arrival or early departure."
-                : "Log makeup time to offset a deficit."}
+                ? t("flex.dialogLateDesc")
+                : t("flex.dialogMakeupDesc")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>{t("flex.colDate")}</Label>
               <Popover>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
@@ -500,7 +502,7 @@ export default function FlexTimePage() {
                   <CalendarIcon className="size-4" />
                   {formDate
                     ? format(formDate, "MMM d, yyyy")
-                    : "Pick a date"}
+                    : t("common.pickDate")}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
@@ -512,32 +514,32 @@ export default function FlexTimePage() {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="flex-minutes">Minutes</Label>
+              <Label htmlFor="flex-minutes">{t("flex.minutes")}</Label>
               <Input
                 id="flex-minutes"
                 type="number"
                 min="1"
                 value={formMinutes}
                 onChange={(e) => setFormMinutes(e.target.value)}
-                placeholder="e.g. 15"
+                placeholder={t("flex.minutesPlaceholder")}
                 required
               />
             </div>
             {dialogType === "DEFICIT" && (
               <div className="space-y-2">
-                <Label htmlFor="flex-reason">Reason</Label>
+                <Label htmlFor="flex-reason">{t("flex.reason")}</Label>
                 <Textarea
                   id="flex-reason"
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
-                  placeholder="Why were you late?"
+                  placeholder={t("flex.reasonPlaceholder")}
                   rows={3}
                 />
               </div>
             )}
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Saving..." : "Submit"}
+                {submitting ? t("common.saving") : t("common.submit")}
               </Button>
             </DialogFooter>
           </form>
