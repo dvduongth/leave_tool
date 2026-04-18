@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && node scripts/create-prisma-barrel.js && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate && node scripts/create-prisma-barrel.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
