@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole, getCurrentUser } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
-import { totalAnnualLeaveHoursFromConfig } from "@/lib/seniority";
+import { totalAnnualLeaveHoursFromConfig } from "@/lib/seniority-server";
 import { parseDateInput } from "@/lib/date-utils";
 
 export async function GET(

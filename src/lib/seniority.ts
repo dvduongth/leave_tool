@@ -3,7 +3,6 @@ import {
   SENIORITY_BONUS_HOURS_PER_TIER,
   SENIORITY_YEARS_PER_TIER,
 } from "./constants";
-import { getConfigNumber } from "./config";
 
 /**
  * Returns full years between two dates (not counting partial years).
@@ -47,19 +46,3 @@ export function totalAnnualLeaveHours(
   return BASE_ANNUAL_LEAVE_HOURS + calculateSeniorityBonusHours(joinDate, asOf);
 }
 
-/**
- * Async version that respects admin-tuned config from DB.
- * Use from server-side routes when creating/updating balances.
- */
-export async function totalAnnualLeaveHoursFromConfig(
-  joinDate: Date | null | undefined,
-  asOf: Date
-): Promise<number> {
-  const base = await getConfigNumber("BASE_ANNUAL_LEAVE_HOURS");
-  if (!joinDate) return base;
-  const yearsPerTier = await getConfigNumber("SENIORITY_YEARS_PER_TIER");
-  const bonusPerTier = await getConfigNumber("SENIORITY_BONUS_HOURS_PER_TIER");
-  const years = yearsBetween(joinDate, asOf);
-  const tiers = Math.floor(years / yearsPerTier);
-  return base + tiers * bonusPerTier;
-}
