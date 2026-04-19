@@ -82,7 +82,38 @@ export async function PATCH(
     if (departmentId !== undefined) data.departmentId = departmentId;
     if (managerId !== undefined) data.managerId = managerId || null;
     if (gender !== undefined) data.gender = gender;
-    if (isActive !== undefined) data.isActive = Boolean(isActive);
+    if (isActive !== undefined) {
+      const nextActive = Boolean(isActive);
+      // When deactivating, block if the employee still has subordinates or leads a department.
+      if (!nextActive && existing.isActive) {
+        const [subCount, leadsDept] = await Promise.all([
+          prisma.employee.count({
+            where: { managerId: id, isActive: true },
+          }),
+          prisma.department.findFirst({
+            where: { headId: id },
+            select: { name: true },
+          }),
+        ]);
+        if (leadsDept) {
+          return Response.json(
+            {
+              error: `Nhân viên này đang là trưởng phòng "${leadsDept.name}". Hãy chuyển Head sang người khác trước khi vô hiệu hoá.`,
+            },
+            { status: 409 }
+          );
+        }
+        if (subCount > 0) {
+          return Response.json(
+            {
+              error: `Nhân viên này đang quản lý ${subCount} người. Hãy đổi manager cho cấp dưới trước khi vô hiệu hoá.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+      data.isActive = nextActive;
+    }
     if (password) {
       data.password = await bcrypt.hash(password, 10);
     }

@@ -127,14 +127,22 @@ export default function AdminEmployeesPage() {
         deptMap.set(emp.department.id, emp.department.name);
       }
       if (emp.role === "MANAGER" || emp.role === "HEAD") {
-        mgrs.push({ id: emp.id, name: emp.name });
+        // Hide inactive managers from dropdown, except keep the currently-assigned one
+        // so editing doesn't silently lose an existing assignment.
+        const isCurrentlyAssigned = editingEmployee?.managerId === emp.id;
+        if (emp.isActive || isCurrentlyAssigned) {
+          mgrs.push({
+            id: emp.id,
+            name: emp.isActive ? emp.name : `${emp.name} (${t("admin.employees.badgeInactive")})`,
+          });
+        }
       }
     }
     setDepartments(
       Array.from(deptMap.entries()).map(([id, name]) => ({ id, name }))
     );
     setManagers(mgrs);
-  }, [employees]);
+  }, [employees, editingEmployee, t]);
 
   function openAddDialog() {
     setEditingEmployee(null);
