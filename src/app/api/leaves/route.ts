@@ -65,9 +65,9 @@ export async function GET(request: Request) {
         where.employeeId = { in: deptEmployees.map((e) => e.id) };
       }
     }
-    // ADMIN: no employeeId filter unless specified
-    else if (user.role === Role.ADMIN && employeeId) {
-      where.employeeId = employeeId;
+    // ADMIN: default to own leaves; explicit employeeId lets them view anyone.
+    else if (user.role === Role.ADMIN) {
+      where.employeeId = employeeId || user.id;
     }
 
     if (status) {
