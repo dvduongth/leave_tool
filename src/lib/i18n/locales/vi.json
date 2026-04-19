@@ -461,7 +461,14 @@
       "errDeleteGeneric": "Có lỗi xảy ra khi xoá",
       "toastCreated": "Đã tạo nhân viên thành công",
       "toastUpdated": "Đã cập nhật nhân viên thành công",
-      "toastDeleted": "Đã xoá nhân viên"
+      "toastDeleted": "Đã xoá nhân viên",
+      "badgeInactive": "Đã vô hiệu",
+      "deactivate": "Vô hiệu hoá",
+      "reactivate": "Kích hoạt lại",
+      "confirmDeactivate": "Vô hiệu hoá tài khoản \"{name}\"?\n\nNhân viên này sẽ không thể đăng nhập nữa. Lịch sử nghỉ phép / OT / flex vẫn được giữ nguyên. Có thể kích hoạt lại bất cứ lúc nào.",
+      "confirmReactivate": "Kích hoạt lại tài khoản \"{name}\"?\n\nNhân viên có thể đăng nhập trở lại bình thường.",
+      "toastDeactivated": "Đã vô hiệu hoá tài khoản",
+      "toastReactivated": "Đã kích hoạt lại tài khoản"
     },
     "holidays": {
       "title": "Quản lý ngày lễ",

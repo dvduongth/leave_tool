@@ -55,6 +55,7 @@ export async function PATCH(
       managerId,
       joinDate,
       gender,
+      isActive,
     } = body;
 
     const existing = await prisma.employee.findUnique({ where: { id } });
@@ -81,6 +82,7 @@ export async function PATCH(
     if (departmentId !== undefined) data.departmentId = departmentId;
     if (managerId !== undefined) data.managerId = managerId || null;
     if (gender !== undefined) data.gender = gender;
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
     if (password) {
       data.password = await bcrypt.hash(password, 10);
     }

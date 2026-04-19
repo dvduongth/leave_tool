@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, UserX, UserCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,7 @@ interface Employee {
   managerId: string | null;
   joinDate: string | null;
   gender: string;
+  isActive: boolean;
   department: { id: string; name: string };
   manager: { id: string; name: string } | null;
 }
@@ -72,6 +74,7 @@ export default function AdminEmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
 
   // Form state
   const [formName, setFormName] = useState("");
@@ -240,6 +243,45 @@ export default function AdminEmployeesPage() {
     }
   }
 
+  async function handleToggleActive() {
+    if (!editingEmployee) return;
+    const nextActive = !editingEmployee.isActive;
+    const confirmKey = nextActive
+      ? "admin.employees.confirmReactivate"
+      : "admin.employees.confirmDeactivate";
+    const ok = window.confirm(
+      t(confirmKey).replace("{name}", editingEmployee.name)
+    );
+    if (!ok) return;
+
+    setTogglingActive(true);
+    try {
+      const res = await fetch(`/api/admin/employees/${editingEmployee.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: nextActive }),
+      });
+      if (res.ok) {
+        toast.success(
+          t(
+            nextActive
+              ? "admin.employees.toastReactivated"
+              : "admin.employees.toastDeactivated"
+          )
+        );
+        setDialogOpen(false);
+        fetchEmployees();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t("admin.employees.errUpdate"));
+      }
+    } catch {
+      toast.error(t("common.unexpectedError"));
+    } finally {
+      setTogglingActive(false);
+    }
+  }
+
   async function handleDelete() {
     if (!editingEmployee) return;
     const ok = window.confirm(
@@ -328,10 +370,21 @@ export default function AdminEmployeesPage() {
               employees.map((emp) => (
                 <TableRow
                   key={emp.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={`cursor-pointer hover:bg-muted/50 ${
+                    emp.isActive ? "" : "opacity-60"
+                  }`}
                   onClick={() => openEditDialog(emp)}
                 >
-                  <TableCell className="font-medium">{emp.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{emp.name}</span>
+                      {!emp.isActive && (
+                        <Badge variant="secondary" className="text-xs">
+                          {t("admin.employees.badgeInactive")}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{emp.email}</TableCell>
                   <TableCell>{emp.role}</TableCell>
                   <TableCell>{emp.department?.name ?? "-"}</TableCell>
@@ -525,19 +578,43 @@ export default function AdminEmployeesPage() {
             </div>
             <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
               {editingEmployee ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={deleting || submitting}
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="size-4" data-icon="inline-start" />
-                  {deleting ? t("admin.employees.deleting") : t("common.delete")}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deleting || submitting || togglingActive}
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="size-4" data-icon="inline-start" />
+                    {deleting
+                      ? t("admin.employees.deleting")
+                      : t("common.delete")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={editingEmployee.isActive ? "outline" : "default"}
+                    disabled={deleting || submitting || togglingActive}
+                    onClick={handleToggleActive}
+                  >
+                    {editingEmployee.isActive ? (
+                      <UserX className="size-4" data-icon="inline-start" />
+                    ) : (
+                      <UserCheck className="size-4" data-icon="inline-start" />
+                    )}
+                    {togglingActive
+                      ? t("common.saving")
+                      : editingEmployee.isActive
+                        ? t("admin.employees.deactivate")
+                        : t("admin.employees.reactivate")}
+                  </Button>
+                </div>
               ) : (
                 <span />
               )}
-              <Button type="submit" disabled={submitting || deleting}>
+              <Button
+                type="submit"
+                disabled={submitting || deleting || togglingActive}
+              >
                 {submitting
                   ? t("common.saving")
                   : editingEmployee

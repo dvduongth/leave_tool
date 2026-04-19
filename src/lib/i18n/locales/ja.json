@@ -461,7 +461,14 @@
       "errDeleteGeneric": "削除中にエラーが発生しました",
       "toastCreated": "従業員を作成しました",
       "toastUpdated": "従業員を更新しました",
-      "toastDeleted": "従業員を削除しました"
+      "toastDeleted": "従業員を削除しました",
+      "badgeInactive": "無効",
+      "deactivate": "無効化",
+      "reactivate": "再有効化",
+      "confirmDeactivate": "「{name}」のアカウントを無効化しますか？\n\n従業員はログインできなくなります。休暇／残業／フレックスの履歴は保持されます。いつでも再有効化できます。",
+      "confirmReactivate": "「{name}」のアカウントを再有効化しますか？\n\n従業員は再度ログインできるようになります。",
+      "toastDeactivated": "アカウントを無効化しました",
+      "toastReactivated": "アカウントを再有効化しました"
     },
     "holidays": {
       "title": "祝日管理",

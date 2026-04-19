@@ -461,7 +461,14 @@
       "errDeleteGeneric": "An error occurred while deleting",
       "toastCreated": "Employee created successfully",
       "toastUpdated": "Employee updated successfully",
-      "toastDeleted": "Employee deleted"
+      "toastDeleted": "Employee deleted",
+      "badgeInactive": "Inactive",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "confirmDeactivate": "Deactivate account \"{name}\"?\n\nThis employee will no longer be able to sign in. Leave / OT / flex history is preserved. You can reactivate anytime.",
+      "confirmReactivate": "Reactivate account \"{name}\"?\n\nThe employee will be able to sign in again.",
+      "toastDeactivated": "Account deactivated",
+      "toastReactivated": "Account reactivated"
     },
     "holidays": {
       "title": "Holiday Management",
