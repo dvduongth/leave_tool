@@ -32,16 +32,28 @@ export async function sendEmail(input: SendEmailInput): Promise<void> {
     return;
   }
 
+  // Test-mode override: redirect all mail to a single inbox.
+  // Useful when sending domain is not verified yet (Resend sandbox).
+  const override = process.env.EMAIL_TEST_OVERRIDE_TO;
+  const actualTo = override || input.to;
+  const actualSubject = override
+    ? `[to:${input.to}] ${input.subject}`
+    : input.subject;
+
   try {
     const { error } = await client.emails.send({
       from,
-      to: input.to,
-      subject: input.subject,
+      to: actualTo,
+      subject: actualSubject,
       html: input.html,
       text: input.text,
     });
     if (error) {
       console.error("[email] send failed:", error);
+    } else if (override) {
+      console.log(
+        `[email] sent (override: ${input.to} -> ${actualTo}): ${input.subject}`
+      );
     }
   } catch (err) {
     console.error("[email] send exception:", err);
