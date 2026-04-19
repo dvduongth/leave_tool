@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
-import { BASE_ANNUAL_LEAVE_HOURS } from "@/lib/constants";
+import { getConfigNumber } from "@/lib/config";
 
 function getWeekBounds(date: Date): { start: Date; end: Date } {
   const d = new Date(date);
@@ -389,6 +389,8 @@ async function getMonthlyReport(
     }),
   ]);
 
+  const baseAnnualLeaveHours = await getConfigNumber("BASE_ANNUAL_LEAVE_HOURS");
+
   // Build per-department summary
   const deptSummaries = filteredDepts.map((dept) => {
     const deptEmpIds = new Set(dept.employees.map((e) => e.id));
@@ -405,11 +407,11 @@ async function getMonthlyReport(
     const totalOtMinutes = deptOt.reduce((s, r) => s + r.otMinutes, 0);
     const employeeCount = dept.employees.length;
 
-    // Utilization: usedHours / (employeeCount * BASE_ANNUAL_LEAVE_HOURS)
+    // Utilization: usedHours / (employeeCount * baseAnnualLeaveHours)
     const utilizationRate =
       employeeCount > 0
         ? Math.round(
-            (totalLeaveHours / (employeeCount * BASE_ANNUAL_LEAVE_HOURS)) * 100
+            (totalLeaveHours / (employeeCount * baseAnnualLeaveHours)) * 100
           )
         : 0;
 

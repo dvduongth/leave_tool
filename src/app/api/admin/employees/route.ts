@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
-import { totalAnnualLeaveHours } from "@/lib/seniority";
+import { totalAnnualLeaveHoursFromConfig } from "@/lib/seniority";
 import { parseDateInput } from "@/lib/date-utils";
 
 export async function GET(request: NextRequest) {
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       departmentId,
       managerId,
       joinDate,
+      gender,
     } = body;
 
     if (!name || !email || !password || !role || !workShift || !departmentId) {
@@ -79,7 +80,10 @@ export async function POST(request: NextRequest) {
     const graceDeadline = new Date(cycleYear + 1, 6, 31); // July 31
 
     const parsedJoinDate = joinDate ? parseDateInput(joinDate) : null;
-    const totalHours = totalAnnualLeaveHours(parsedJoinDate, cycleStart);
+    const totalHours = await totalAnnualLeaveHoursFromConfig(
+      parsedJoinDate,
+      cycleStart
+    );
 
     const employee = await prisma.employee.create({
       data: {
@@ -91,6 +95,7 @@ export async function POST(request: NextRequest) {
         departmentId,
         managerId: managerId || null,
         joinDate: parsedJoinDate,
+        gender: gender || "UNSPECIFIED",
         leaveBalances: {
           create: {
             cycleYear,

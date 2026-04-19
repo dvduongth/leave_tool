@@ -1,10 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role, FlexMonthStatus } from "@/generated/prisma";
-import {
-  LOW_BALANCE_THRESHOLD_HOURS,
-  HIGH_OT_THRESHOLD_HOURS,
-} from "@/lib/constants";
+import { getConfigNumber } from "@/lib/config";
 
 export async function GET() {
   try {
@@ -111,7 +108,12 @@ export async function GET() {
     // --- Alerts ---
     const alerts: { type: string; message: string }[] = [];
 
-    if (balance && balance.remainingHours < LOW_BALANCE_THRESHOLD_HOURS) {
+    const lowBalanceThreshold = await getConfigNumber(
+      "LOW_BALANCE_THRESHOLD_HOURS"
+    );
+    const highOtThreshold = await getConfigNumber("HIGH_OT_THRESHOLD_HOURS");
+
+    if (balance && balance.remainingHours < lowBalanceThreshold) {
       alerts.push({
         type: "low_balance",
         message: `Low leave balance: ${balance.remainingHours}h remaining`,
@@ -125,10 +127,10 @@ export async function GET() {
       });
     }
 
-    if (totalOtMinutes > HIGH_OT_THRESHOLD_HOURS * 60) {
+    if (totalOtMinutes > highOtThreshold * 60) {
       alerts.push({
         type: "high_ot",
-        message: `High OT this month: ${Math.round(totalOtMinutes / 60)}h (>${HIGH_OT_THRESHOLD_HOURS}h threshold)`,
+        message: `High OT this month: ${Math.round(totalOtMinutes / 60)}h (>${highOtThreshold}h threshold)`,
       });
     }
 

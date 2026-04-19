@@ -20,6 +20,13 @@ enum ShiftType {
   C
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
+}
+
 enum LeaveStatus {
   DRAFT
   PENDING_MANAGER
@@ -73,6 +80,7 @@ model Employee {
   workShift    ShiftType @default(A) @map("work_shift")
   preferredLocale String @default("vi") @map("preferred_locale")
   joinDate     DateTime? @map("join_date") @db.Date
+  gender       Gender    @default(UNSPECIFIED)
   emailNotifEnabled Boolean @default(true) @map("email_notif_enabled")
   createdAt    DateTime  @default(now()) @map("created_at")
 
@@ -88,6 +96,7 @@ model Employee {
   flexTimeApprovals  FlexTimeRecord[]       @relation("FlexApprover")
   flexMonthlySummary FlexTimeMonthlySummary[]
   notifications      Notification[]
+  menstrualLeaves    MenstrualLeave[]
 
   @@map("employees")
 }
@@ -230,6 +239,32 @@ model Holiday {
 
   @@unique([date])
   @@map("holidays")
+}
+
+model MenstrualLeave {
+  id         String   @id @default(uuid())
+  employeeId String   @map("employee_id")
+  date       DateTime @db.Date
+  startTime  String   @map("start_time")
+  endTime    String   @map("end_time")
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+  @@map("menstrual_leaves")
+}
+
+model AppConfig {
+  key         String   @id
+  value       String
+  type        String   // "int" | "float" | "string"
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("app_config")
 }
 
 model Notification {

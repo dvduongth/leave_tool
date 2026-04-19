@@ -13,16 +13,19 @@ import {
   CalendarOff,
   BookOpen,
   Settings,
+  Heart,
+  Sliders,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
-import type { Role } from "@/generated/prisma";
+import type { Role, Gender } from "@/generated/prisma";
 
 interface NavItem {
   labelKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles?: Role[];
+  femaleOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -37,6 +40,12 @@ const navItems: NavItem[] = [
   { labelKey: "nav.ot", href: "/ot", icon: Clock },
   { labelKey: "nav.flexTime", href: "/flex-time", icon: Timer },
   {
+    labelKey: "nav.wellness",
+    href: "/wellness",
+    icon: Heart,
+    femaleOnly: true,
+  },
+  {
     labelKey: "nav.reports",
     href: "/reports",
     icon: BarChart3,
@@ -49,13 +58,15 @@ const navItems: NavItem[] = [
 const adminItems: NavItem[] = [
   { labelKey: "nav.employees", href: "/admin/employees", icon: Users },
   { labelKey: "nav.holidays", href: "/admin/holidays", icon: CalendarOff },
+  { labelKey: "nav.adminSettings", href: "/admin/settings", icon: Sliders },
 ];
 
 interface SidebarProps {
   role: Role;
+  gender?: Gender;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, gender = "UNSPECIFIED" }: SidebarProps) {
   const pathname = usePathname();
   const t = useT();
 
@@ -64,9 +75,11 @@ export function Sidebar({ role }: SidebarProps) {
     return pathname.startsWith(href);
   };
 
-  const visibleItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(role)
-  );
+  const visibleItems = navItems.filter((item) => {
+    if (item.roles && !item.roles.includes(role)) return false;
+    if (item.femaleOnly && gender !== "FEMALE") return false;
+    return true;
+  });
 
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-background">

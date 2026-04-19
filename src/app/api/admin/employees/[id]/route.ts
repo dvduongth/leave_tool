@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireRole, getCurrentUser } from "@/lib/auth-utils";
 import bcrypt from "bcryptjs";
-import { totalAnnualLeaveHours } from "@/lib/seniority";
+import { totalAnnualLeaveHoursFromConfig } from "@/lib/seniority";
 import { parseDateInput } from "@/lib/date-utils";
 
 export async function GET(
@@ -54,6 +54,7 @@ export async function PATCH(
       departmentId,
       managerId,
       joinDate,
+      gender,
     } = body;
 
     const existing = await prisma.employee.findUnique({ where: { id } });
@@ -79,6 +80,7 @@ export async function PATCH(
     if (workShift !== undefined) data.workShift = workShift;
     if (departmentId !== undefined) data.departmentId = departmentId;
     if (managerId !== undefined) data.managerId = managerId || null;
+    if (gender !== undefined) data.gender = gender;
     if (password) {
       data.password = await bcrypt.hash(password, 10);
     }
@@ -110,7 +112,10 @@ export async function PATCH(
         },
       });
       for (const b of activeBalances) {
-        const newTotal = totalAnnualLeaveHours(updated.joinDate, b.cycleStart);
+        const newTotal = await totalAnnualLeaveHoursFromConfig(
+          updated.joinDate,
+          b.cycleStart
+        );
         if (newTotal !== b.totalHours) {
           await prisma.leaveBalance.update({
             where: { id: b.id },

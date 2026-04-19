@@ -19,10 +19,15 @@ export default async function DashboardLayout({
     name: string;
     role: "ADMIN" | "HEAD" | "MANAGER" | "EMPLOYEE";
     departmentId: string;
+    gender?: "MALE" | "FEMALE" | "OTHER" | "UNSPECIFIED";
   };
 
   return (
-    <DashboardShell userName={user.name ?? "User"} role={user.role}>
+    <DashboardShell
+      userName={user.name ?? "User"}
+      role={user.role}
+      gender={user.gender ?? "UNSPECIFIED"}
+    >
       {children}
     </DashboardShell>
   );

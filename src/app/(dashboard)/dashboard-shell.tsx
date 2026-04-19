@@ -3,22 +3,28 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
-import type { Role } from "@/generated/prisma";
+import type { Role, Gender } from "@/generated/prisma";
 
 interface DashboardShellProps {
   userName: string;
   role: Role;
+  gender?: Gender;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ userName, role, children }: DashboardShellProps) {
+export function DashboardShell({
+  userName,
+  role,
+  gender = "UNSPECIFIED",
+  children,
+}: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:block">
-        <Sidebar role={role} />
+        <Sidebar role={role} gender={gender} />
       </div>
 
       {/* Mobile sidebar overlay */}
@@ -29,7 +35,7 @@ export function DashboardShell({ userName, role, children }: DashboardShellProps
             onClick={() => setSidebarOpen(false)}
           />
           <div className="relative z-10 h-full w-64">
-            <Sidebar role={role} />
+            <Sidebar role={role} gender={gender} />
           </div>
         </div>
       )}

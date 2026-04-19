@@ -25,6 +25,7 @@ export const authOptions: AuthOptions = {
           name: user.name,
           role: user.role,
           departmentId: user.departmentId,
+          gender: user.gender,
         };
       },
     }),
@@ -36,6 +37,7 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.departmentId = (user as any).departmentId;
+        token.gender = (user as any).gender;
       }
       return token;
     },
@@ -44,6 +46,7 @@ export const authOptions: AuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).departmentId = token.departmentId;
+        (session.user as any).gender = token.gender;
       }
       return session;
     },

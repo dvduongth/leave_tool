@@ -45,6 +45,7 @@ interface Employee {
   departmentId: string;
   managerId: string | null;
   joinDate: string | null;
+  gender: string;
   department: { id: string; name: string };
   manager: { id: string; name: string } | null;
 }
@@ -56,6 +57,7 @@ interface Department {
 
 const ROLES = ["EMPLOYEE", "MANAGER", "HEAD", "ADMIN"];
 const SHIFTS = ["A", "B", "C"];
+const GENDERS = ["UNSPECIFIED", "MALE", "FEMALE", "OTHER"];
 
 export default function AdminEmployeesPage() {
   const t = useT();
@@ -80,6 +82,7 @@ export default function AdminEmployeesPage() {
   const [formDepartment, setFormDepartment] = useState("");
   const [formManager, setFormManager] = useState("");
   const [formJoinDate, setFormJoinDate] = useState("");
+  const [formGender, setFormGender] = useState("UNSPECIFIED");
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -140,6 +143,7 @@ export default function AdminEmployeesPage() {
     setFormDepartment("");
     setFormManager("");
     setFormJoinDate("");
+    setFormGender("UNSPECIFIED");
     setDialogOpen(true);
   }
 
@@ -153,6 +157,7 @@ export default function AdminEmployeesPage() {
     setFormDepartment(emp.departmentId);
     setFormManager(emp.managerId || "");
     setFormJoinDate(emp.joinDate ? emp.joinDate.slice(0, 10) : "");
+    setFormGender(emp.gender || "UNSPECIFIED");
     setDialogOpen(true);
   }
 
@@ -171,6 +176,7 @@ export default function AdminEmployeesPage() {
           departmentId: formDepartment,
           managerId: formManager || null,
           joinDate: formJoinDate || null,
+          gender: formGender,
         };
         if (formPassword) body.password = formPassword;
 
@@ -215,6 +221,7 @@ export default function AdminEmployeesPage() {
             departmentId: formDepartment,
             managerId: formManager || null,
             joinDate: formJoinDate || null,
+            gender: formGender,
           }),
         });
         if (res.ok) {
@@ -481,6 +488,24 @@ export default function AdminEmployeesPage() {
               <p className="text-xs text-muted-foreground">
                 {t("admin.employees.joinDateHint")}
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("admin.employees.gender")}</Label>
+              <Select
+                value={formGender}
+                onValueChange={(val) => setFormGender(val as string)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GENDERS.map((g) => (
+                    <SelectItem key={g} value={g}>
+                      {t(`admin.employees.gender_${g}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("admin.employees.managerOptional")}</Label>
