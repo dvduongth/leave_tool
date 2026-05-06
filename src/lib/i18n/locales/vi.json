@@ -412,7 +412,22 @@
     "uncompensatedDeficit": "Thiếu giờ chưa bù",
     "colTotalDeficit": "Tổng thiếu (phút)",
     "colTotalMakeup": "Tổng bù (phút)",
-    "colEmployeesRemaining": "NV còn thiếu"
+    "colEmployeesRemaining": "NV còn thiếu",
+    "csvDailyTitle": "Báo cáo ngày",
+    "csvWeeklyTitle": "Báo cáo tuần",
+    "csvMonthlyTitle": "Báo cáo tháng",
+    "csvSummary": "Tổng hợp",
+    "csvEmployeeId": "Mã NV",
+    "csvDepartmentId": "Mã phòng ban",
+    "csvDay": "Thứ",
+    "csvHours": "Số giờ",
+    "csvRank": "Hạng",
+    "csvApprovedCount": "Số đơn duyệt",
+    "csvRejectedCount": "Số đơn từ chối",
+    "csvApprovalRatePct": "Tỷ lệ duyệt (%)",
+    "csvUncompensatedByDept": "Thiếu giờ chưa bù (theo phòng ban)",
+    "exportPromptFilename": "Nhập tên file CSV:",
+    "exportDefaultFilename": "report.csv"
   },
   "admin": {
     "employees": {

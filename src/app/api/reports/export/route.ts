@@ -9,6 +9,8 @@ import {
   getVisibleEmployeeIds,
   getWeeklyReport,
 } from "@/lib/reports";
+import { messages, translate, type Messages } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/i18n/server";
 
 // RFC 4180 CSV escape: wrap in quotes if the value contains a comma,
 // double-quote, CR, or LF. Inner quotes are doubled.
@@ -25,54 +27,69 @@ function csvRow(cells: (string | number | null | undefined)[]): string {
   return cells.map(csvCell).join(",");
 }
 
-function buildDailyCsv(d: DailyReport): string {
+type T = (key: string) => string;
+
+function buildDailyCsv(d: DailyReport, t: T): string {
   const lines: string[] = [];
-  lines.push(csvRow(["Daily Report", d.date]));
+  lines.push(csvRow([t("reports.csvDailyTitle"), d.date]));
   lines.push("");
-  lines.push(csvRow(["Summary"]));
-  lines.push(csvRow(["Total on leave", d.summary.totalOnLeave]));
-  lines.push(csvRow(["Total OT minutes", d.summary.totalOtMinutes]));
+  lines.push(csvRow([t("reports.csvSummary")]));
+  lines.push(csvRow([t("reports.totalOnLeave"), d.summary.totalOnLeave]));
+  lines.push(csvRow([t("reports.totalOT"), d.summary.totalOtMinutes]));
   lines.push("");
-  lines.push(csvRow(["Employees on Leave"]));
-  lines.push(csvRow(["Employee ID", "Employee", "Leave Hours", "Status"]));
+  lines.push(csvRow([t("reports.employeesOnLeave")]));
+  lines.push(
+    csvRow([
+      t("reports.csvEmployeeId"),
+      t("reports.colEmployee"),
+      t("reports.colLeaveHours"),
+      t("reports.colStatus"),
+    ])
+  );
   for (const e of d.employees) {
     lines.push(csvRow([e.id, e.name, e.totalHours, e.status]));
   }
   lines.push("");
-  lines.push(csvRow(["OT Records"]));
-  lines.push(csvRow(["Employee ID", "Employee", "OT Minutes"]));
+  lines.push(csvRow([t("reports.otRecords")]));
+  lines.push(
+    csvRow([
+      t("reports.csvEmployeeId"),
+      t("reports.colEmployee"),
+      t("reports.colOtMinutes"),
+    ])
+  );
   for (const r of d.otRecords) {
     lines.push(csvRow([r.id, r.name, r.otMinutes]));
   }
   return lines.join("\r\n");
 }
 
-function buildWeeklyCsv(d: WeeklyReport): string {
+function buildWeeklyCsv(d: WeeklyReport, t: T): string {
   const lines: string[] = [];
-  lines.push(csvRow(["Weekly Report", d.weekStart, d.weekEnd]));
+  lines.push(csvRow([t("reports.csvWeeklyTitle"), d.weekStart, d.weekEnd]));
   lines.push("");
-  lines.push(csvRow(["Summary"]));
-  lines.push(csvRow(["Total leave hours", d.summary.totalLeaveHours]));
-  lines.push(csvRow(["Total OT minutes", d.summary.totalOtMinutes]));
-  lines.push(csvRow(["Approved count", d.summary.approvedCount]));
-  lines.push(csvRow(["Rejected count", d.summary.rejectedCount]));
-  lines.push(csvRow(["Approval rate (%)", d.summary.approvalRate]));
+  lines.push(csvRow([t("reports.csvSummary")]));
+  lines.push(csvRow([t("reports.totalLeave"), d.summary.totalLeaveHours]));
+  lines.push(csvRow([t("reports.totalOT"), d.summary.totalOtMinutes]));
+  lines.push(csvRow([t("reports.csvApprovedCount"), d.summary.approvedCount]));
+  lines.push(csvRow([t("reports.csvRejectedCount"), d.summary.rejectedCount]));
+  lines.push(csvRow([t("reports.csvApprovalRatePct"), d.summary.approvalRate]));
   lines.push("");
-  lines.push(csvRow(["Leave Hours by Day of Week"]));
-  lines.push(csvRow(["Day", "Hours"]));
+  lines.push(csvRow([t("reports.leaveByDay")]));
+  lines.push(csvRow([t("reports.csvDay"), t("reports.csvHours")]));
   for (const row of d.dayOfWeekHours) {
     lines.push(csvRow([row.day, row.hours]));
   }
   lines.push("");
-  lines.push(csvRow(["Employee Breakdown"]));
+  lines.push(csvRow([t("reports.employeeBreakdown")]));
   lines.push(
     csvRow([
-      "Employee ID",
-      "Employee",
-      "This Week (h)",
-      "Last Week (h)",
-      "Delta (h)",
-      "OT (min)",
+      t("reports.csvEmployeeId"),
+      t("reports.colEmployee"),
+      t("reports.colThisWeek"),
+      t("reports.colLastWeek"),
+      t("reports.colDelta"),
+      t("reports.colOtMin"),
     ])
   );
   for (const e of d.employees) {
@@ -83,19 +100,19 @@ function buildWeeklyCsv(d: WeeklyReport): string {
   return lines.join("\r\n");
 }
 
-function buildMonthlyCsv(d: MonthlyReport): string {
+function buildMonthlyCsv(d: MonthlyReport, t: T): string {
   const lines: string[] = [];
-  lines.push(csvRow(["Monthly Report", d.monthStart, d.monthEnd]));
+  lines.push(csvRow([t("reports.csvMonthlyTitle"), d.monthStart, d.monthEnd]));
   lines.push("");
-  lines.push(csvRow(["Department Summary"]));
+  lines.push(csvRow([t("reports.departmentSummary")]));
   lines.push(
     csvRow([
-      "Department ID",
-      "Department",
-      "Employees",
-      "Leave Hours",
-      "OT Hours",
-      "Utilization (%)",
+      t("reports.csvDepartmentId"),
+      t("reports.colDepartment"),
+      t("reports.colEmployees"),
+      t("reports.colLeaveHours"),
+      t("reports.colOtHours"),
+      t("reports.colUtilization"),
     ])
   );
   for (const dept of d.departments) {
@@ -111,20 +128,27 @@ function buildMonthlyCsv(d: MonthlyReport): string {
     );
   }
   lines.push("");
-  lines.push(csvRow(["Top Leave Takers"]));
-  lines.push(csvRow(["Rank", "Employee ID", "Employee", "Hours"]));
+  lines.push(csvRow([t("reports.topLeaveTakers")]));
+  lines.push(
+    csvRow([
+      t("reports.csvRank"),
+      t("reports.csvEmployeeId"),
+      t("reports.colEmployee"),
+      t("reports.csvHours"),
+    ])
+  );
   d.topLeaveTakers.forEach((emp, i) => {
     lines.push(csvRow([i + 1, emp.id, emp.name, emp.hours]));
   });
   lines.push("");
-  lines.push(csvRow(["Uncompensated Flex Deficit (by Department)"]));
+  lines.push(csvRow([t("reports.csvUncompensatedByDept")]));
   lines.push(
     csvRow([
-      "Department ID",
-      "Department",
-      "Total Deficit (min)",
-      "Total Makeup (min)",
-      "Employees Remaining",
+      t("reports.csvDepartmentId"),
+      t("reports.colDepartment"),
+      t("reports.colTotalDeficit"),
+      t("reports.colTotalMakeup"),
+      t("reports.colEmployeesRemaining"),
     ])
   );
   for (const dept of d.departments.filter(
@@ -143,17 +167,36 @@ function buildMonthlyCsv(d: MonthlyReport): string {
   return lines.join("\r\n");
 }
 
-function buildCsv(report: AnyReport): string {
-  if (report.type === "daily") return buildDailyCsv(report);
-  if (report.type === "weekly") return buildWeeklyCsv(report);
-  return buildMonthlyCsv(report);
+function buildCsv(report: AnyReport, t: T): string {
+  if (report.type === "daily") return buildDailyCsv(report, t);
+  if (report.type === "weekly") return buildWeeklyCsv(report, t);
+  return buildMonthlyCsv(report, t);
 }
 
-function buildFilename(type: string, date: Date): string {
+function defaultFilename(type: string, date: Date): string {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `leave-report-${type}-${yyyy}${mm}${dd}.csv`;
+}
+
+// Sanitize a user-supplied filename: strip path separators, control chars,
+// and characters disallowed on Windows. Ensure .csv extension. Length cap.
+function sanitizeFilename(raw: string, fallback: string): string {
+  // Strip path components (anything after the last / or \)
+  const base = raw.replace(/^.*[\\/]/, "").trim();
+  if (!base) return fallback;
+  // Replace forbidden Windows chars and control chars with _
+  // eslint-disable-next-line no-control-regex
+  let cleaned = base.replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
+  // Avoid trailing dots/spaces (Windows)
+  cleaned = cleaned.replace(/[. ]+$/, "");
+  if (!cleaned) return fallback;
+  // Force .csv extension
+  if (!/\.csv$/i.test(cleaned)) cleaned += ".csv";
+  // Hard cap
+  if (cleaned.length > 200) cleaned = cleaned.slice(0, 196) + ".csv";
+  return cleaned;
 }
 
 export async function GET(request: Request) {
@@ -163,10 +206,15 @@ export async function GET(request: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const locale = await resolveLocale();
+    const msgs: Messages = messages[locale];
+    const t: T = (key: string) => translate(msgs, key);
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "daily";
     const dateStr = searchParams.get("date");
     const departmentId = searchParams.get("departmentId");
+    const requestedFilename = searchParams.get("filename");
 
     const queryDate = dateStr ? new Date(dateStr) : new Date();
     queryDate.setHours(0, 0, 0, 0);
@@ -188,8 +236,11 @@ export async function GET(request: Request) {
     }
 
     // UTF-8 BOM so Excel on Windows picks up UTF-8 (preserves Vietnamese/Japanese)
-    const csv = "\uFEFF" + buildCsv(report);
-    const filename = buildFilename(type, queryDate);
+    const csv = "\uFEFF" + buildCsv(report, t);
+    const fallback = defaultFilename(type, queryDate);
+    const filename = requestedFilename
+      ? sanitizeFilename(requestedFilename, fallback)
+      : fallback;
 
     return new Response(csv, {
       status: 200,

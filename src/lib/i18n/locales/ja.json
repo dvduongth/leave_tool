@@ -412,7 +412,22 @@
     "uncompensatedDeficit": "未補填フレックス不足",
     "colTotalDeficit": "不足合計 (分)",
     "colTotalMakeup": "補填合計 (分)",
-    "colEmployeesRemaining": "残りあり従業員"
+    "colEmployeesRemaining": "残りあり従業員",
+    "csvDailyTitle": "日次レポート",
+    "csvWeeklyTitle": "週次レポート",
+    "csvMonthlyTitle": "月次レポート",
+    "csvSummary": "サマリー",
+    "csvEmployeeId": "社員ID",
+    "csvDepartmentId": "部門ID",
+    "csvDay": "曜日",
+    "csvHours": "時間",
+    "csvRank": "順位",
+    "csvApprovedCount": "承認件数",
+    "csvRejectedCount": "却下件数",
+    "csvApprovalRatePct": "承認率 (%)",
+    "csvUncompensatedByDept": "未補填フレックス不足（部門別）",
+    "exportPromptFilename": "CSVファイル名を入力:",
+    "exportDefaultFilename": "report.csv"
   },
   "admin": {
     "employees": {

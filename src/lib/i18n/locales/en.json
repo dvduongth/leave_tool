@@ -412,7 +412,22 @@
     "uncompensatedDeficit": "Uncompensated Flex Deficit",
     "colTotalDeficit": "Total Deficit (min)",
     "colTotalMakeup": "Total Makeup (min)",
-    "colEmployeesRemaining": "Employees w/ Remaining"
+    "colEmployeesRemaining": "Employees w/ Remaining",
+    "csvDailyTitle": "Daily Report",
+    "csvWeeklyTitle": "Weekly Report",
+    "csvMonthlyTitle": "Monthly Report",
+    "csvSummary": "Summary",
+    "csvEmployeeId": "Employee ID",
+    "csvDepartmentId": "Department ID",
+    "csvDay": "Day",
+    "csvHours": "Hours",
+    "csvRank": "Rank",
+    "csvApprovedCount": "Approved Count",
+    "csvRejectedCount": "Rejected Count",
+    "csvApprovalRatePct": "Approval Rate (%)",
+    "csvUncompensatedByDept": "Uncompensated Flex Deficit (by Department)",
+    "exportPromptFilename": "Enter CSV filename:",
+    "exportDefaultFilename": "report.csv"
   },
   "admin": {
     "employees": {

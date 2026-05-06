@@ -168,7 +168,19 @@ export default function ReportsPage() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const defaultName = t("reports.exportDefaultFilename") || "report.csv";
+
+    // Decide filename strategy:
+    // - If browser supports File System Access API → let user pick dir + name
+    //   via native Save As dialog (best UX, Chromium only).
+    // - Otherwise → prompt() for filename, then trigger browser download to
+    //   the default Downloads folder (Firefox/Safari fallback).
+    const supportsFsa =
+      typeof window !== "undefined" &&
+      typeof (window as unknown as { showSaveFilePicker?: unknown })
+        .showSaveFilePicker === "function";
+
     const params = new URLSearchParams({
       type: reportType,
       date: selectedDate.toISOString(),
@@ -176,9 +188,57 @@ export default function ReportsPage() {
     if (departmentId !== "ALL") {
       params.set("departmentId", departmentId);
     }
-    // Trigger browser download via the export endpoint. Using window.location
-    // (rather than fetch) lets the browser handle the file save dialog and
-    // forwards auth cookies automatically.
+
+    if (supportsFsa) {
+      // Native Save As: user picks folder + filename. Fetch CSV as blob.
+      try {
+        const handle = await (
+          window as unknown as {
+            showSaveFilePicker: (opts: {
+              suggestedName: string;
+              types: { description: string; accept: Record<string, string[]> }[];
+            }) => Promise<{
+              createWritable: () => Promise<{
+                write: (data: Blob) => Promise<void>;
+                close: () => Promise<void>;
+              }>;
+            }>;
+          }
+        ).showSaveFilePicker({
+          suggestedName: defaultName,
+          types: [
+            {
+              description: "CSV",
+              accept: { "text/csv": [".csv"] },
+            },
+          ],
+        });
+        const res = await fetch(`/api/reports/export?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch (err) {
+        // User cancelled the picker → AbortError; ignore silently. Other errors
+        // we surface to console so they're debuggable but don't crash UI.
+        if ((err as { name?: string })?.name !== "AbortError") {
+          console.error("Export failed", err);
+        }
+      }
+      return;
+    }
+
+    // Fallback: prompt for filename, then redirect to endpoint with filename
+    // in query — server sanitizes and emits Content-Disposition. Browser
+    // saves into the default Downloads folder.
+    const userInput = window.prompt(
+      t("reports.exportPromptFilename"),
+      defaultName
+    );
+    if (userInput === null) return; // user cancelled
+    const filename = userInput.trim() || defaultName;
+    params.set("filename", filename);
     window.location.href = `/api/reports/export?${params.toString()}`;
   };
 
