@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/flex-settle", "schedule": "0 0 1 * *" },
-    { "path": "/api/cron/flex-warning", "schedule": "0 9 25 * *" }
+    { "path": "/api/cron/flex-warning", "schedule": "0 9 25 * *" },
+    { "path": "/api/cron/keep-alive", "schedule": "0 3 */3 * *" }
   ]
 }
