@@ -376,6 +376,7 @@
     "title": "Reports",
     "subtitle": "Leave and overtime analytics",
     "allDepartments": "All Departments",
+    "exportCsv": "Export CSV",
     "tabDaily": "Daily",
     "tabWeekly": "Weekly",
     "tabMonthly": "Monthly",

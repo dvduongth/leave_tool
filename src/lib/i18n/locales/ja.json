@@ -376,6 +376,7 @@
     "title": "レポート",
     "subtitle": "休暇と残業の分析",
     "allDepartments": "すべての部門",
+    "exportCsv": "CSVエクスポート",
     "tabDaily": "日次",
     "tabWeekly": "週次",
     "tabMonthly": "月次",

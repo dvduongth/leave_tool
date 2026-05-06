@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, DownloadIcon } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -168,6 +168,20 @@ export default function ReportsPage() {
     }
   };
 
+  const handleExport = () => {
+    const params = new URLSearchParams({
+      type: reportType,
+      date: selectedDate.toISOString(),
+    });
+    if (departmentId !== "ALL") {
+      params.set("departmentId", departmentId);
+    }
+    // Trigger browser download via the export endpoint. Using window.location
+    // (rather than fetch) lets the browser handle the file save dialog and
+    // forwards auth cookies automatically.
+    window.location.href = `/api/reports/export?${params.toString()}`;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -211,6 +225,17 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
         )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={handleExport}
+          disabled={loading || !data}
+        >
+          <DownloadIcon className="size-4" />
+          {t("reports.exportCsv")}
+        </Button>
       </div>
 
       {/* Tabs */}

@@ -376,6 +376,7 @@
     "title": "Báo cáo",
     "subtitle": "Phân tích nghỉ phép và làm thêm",
     "allDepartments": "Tất cả phòng ban",
+    "exportCsv": "Xuất CSV",
     "tabDaily": "Theo ngày",
     "tabWeekly": "Theo tuần",
     "tabMonthly": "Theo tháng",
