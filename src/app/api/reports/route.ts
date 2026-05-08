@@ -5,6 +5,7 @@ import {
   getVisibleEmployeeIds,
   getWeeklyReport,
 } from "@/lib/reports";
+import { logAudit, getRequestIp } from "@/lib/audit";
 
 export async function GET(request: Request) {
   try {
@@ -26,21 +27,32 @@ export async function GET(request: Request) {
       ? { employeeId: { in: employeeIds } }
       : {};
 
+    let payload: unknown;
     if (type === "daily") {
-      return Response.json(await getDailyReport(queryDate, employeeFilter));
+      payload = await getDailyReport(queryDate, employeeFilter);
+    } else if (type === "weekly") {
+      payload = await getWeeklyReport(queryDate, employeeFilter);
+    } else if (type === "monthly") {
+      payload = await getMonthlyReport(queryDate, employeeFilter, user.role);
+    } else {
+      return Response.json({ error: "Invalid report type" }, { status: 400 });
     }
 
-    if (type === "weekly") {
-      return Response.json(await getWeeklyReport(queryDate, employeeFilter));
-    }
+    await logAudit({
+      userId: user.id,
+      action: "REPORT_VIEW",
+      entity: "report",
+      metadata: {
+        type,
+        date: queryDate.toISOString().slice(0, 10),
+        departmentId: departmentId || null,
+        role: user.role,
+        visibleEmployeeCount: employeeIds?.length ?? null,
+      },
+      ipAddress: getRequestIp(request),
+    });
 
-    if (type === "monthly") {
-      return Response.json(
-        await getMonthlyReport(queryDate, employeeFilter, user.role)
-      );
-    }
-
-    return Response.json({ error: "Invalid report type" }, { status: 400 });
+    return Response.json(payload);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Internal server error";

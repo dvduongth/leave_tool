@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { calculateLeaveEnd } from "@/lib/working-hours";
+import { calculateHoursFromRange } from "@/lib/working-hours";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
 
@@ -76,9 +76,6 @@ export async function PATCH(
 
     const leave = await prisma.leaveRequest.findUnique({
       where: { id },
-      include: {
-        employee: { select: { workShift: true } },
-      },
     });
 
     if (!leave) {
@@ -99,18 +96,16 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { startDate, startTime, totalHours, reason } = body;
+    const { startDate, startTime, endDate: endDateInput, endTime: endTimeInput, reason } = body;
 
     const oldValues: Record<string, string | number | boolean | null> = {};
     const newValues: Record<string, string | number | boolean | null> = {};
     const updateData: Record<string, unknown> = {};
 
-    // If status was PENDING_MANAGER, reset to DRAFT
     if (leave.status === LeaveStatus.PENDING_MANAGER) {
       oldValues.status = leave.status;
       updateData.status = LeaveStatus.DRAFT;
       newValues.status = LeaveStatus.DRAFT;
-      // Clear manager action fields
       updateData.managerAction = null;
       updateData.managerComment = null;
       updateData.managerActionAt = null;
@@ -122,21 +117,23 @@ export async function PATCH(
       updateData.reason = reason;
     }
 
-    // If date/time/hours changed, recalculate endDate/endTime
     const newStartDate = startDate ? new Date(startDate) : leave.startDate;
     const newStartTime = startTime || leave.startTime;
-    const newTotalHours = totalHours ?? leave.totalHours;
+    const newEndDate = endDateInput ? new Date(endDateInput) : leave.endDate;
+    const newEndTime = endTimeInput || leave.endTime;
 
-    const datesChanged =
+    const startChanged =
       (startDate && new Date(startDate).toISOString() !== leave.startDate.toISOString()) ||
-      (startTime && startTime !== leave.startTime) ||
-      (totalHours !== undefined && totalHours !== leave.totalHours);
+      (startTime && startTime !== leave.startTime);
+    const endChanged =
+      (endDateInput && new Date(endDateInput).toISOString() !== leave.endDate.toISOString()) ||
+      (endTimeInput && endTimeInput !== leave.endTime);
 
-    if (datesChanged) {
-      // Validate totalHours
-      if (newTotalHours <= 0 || (newTotalHours * 100) % 25 !== 0) {
+    if (startChanged || endChanged) {
+      const tre = /^\d{2}:\d{2}$/;
+      if (!tre.test(newStartTime) || !tre.test(newEndTime)) {
         return Response.json(
-          { error: "totalHours must be a positive multiple of 0.25" },
+          { error: "startTime and endTime must be in HH:MM format" },
           { status: 400 }
         );
       }
@@ -144,13 +141,27 @@ export async function PATCH(
       const holidays = await prisma.holiday.findMany({ select: { date: true } });
       const holidayDates = holidays.map((h) => h.date);
 
-      const { endDate, endTime } = calculateLeaveEnd(
-        leave.employee.workShift,
-        newStartDate,
-        newStartTime,
-        newTotalHours,
-        holidayDates
-      );
+      let computed;
+      try {
+        computed = await calculateHoursFromRange(
+          leave.employeeId,
+          newStartDate,
+          newStartTime,
+          newEndDate,
+          newEndTime,
+          holidayDates
+        );
+      } catch (err) {
+        const m = err instanceof Error ? err.message : "Invalid range";
+        return Response.json({ error: m }, { status: 400 });
+      }
+
+      if (computed.totalHours <= 0) {
+        return Response.json(
+          { error: "Range produces 0 working hours" },
+          { status: 400 }
+        );
+      }
 
       if (startDate) {
         oldValues.startDate = leave.startDate.toISOString();
@@ -162,18 +173,20 @@ export async function PATCH(
         newValues.startTime = newStartTime;
         updateData.startTime = newStartTime;
       }
-      if (totalHours !== undefined) {
-        oldValues.totalHours = leave.totalHours;
-        newValues.totalHours = newTotalHours;
-        updateData.totalHours = newTotalHours;
+      if (endDateInput) {
+        oldValues.endDate = leave.endDate.toISOString();
+        newValues.endDate = newEndDate.toISOString();
+        updateData.endDate = newEndDate;
+      }
+      if (endTimeInput) {
+        oldValues.endTime = leave.endTime;
+        newValues.endTime = newEndTime;
+        updateData.endTime = newEndTime;
       }
 
-      oldValues.endDate = leave.endDate.toISOString();
-      oldValues.endTime = leave.endTime;
-      newValues.endDate = endDate.toISOString();
-      newValues.endTime = endTime;
-      updateData.endDate = endDate;
-      updateData.endTime = endTime;
+      oldValues.totalHours = leave.totalHours;
+      newValues.totalHours = computed.totalHours;
+      updateData.totalHours = computed.totalHours;
     }
 
     if (Object.keys(updateData).length === 0) {

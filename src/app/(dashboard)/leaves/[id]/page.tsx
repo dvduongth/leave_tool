@@ -104,6 +104,8 @@ export default function LeaveDetailPage() {
   // Edit form state
   const [editStartDate, setEditStartDate] = useState<Date | undefined>();
   const [editStartTime, setEditStartTime] = useState("");
+  const [editEndDate, setEditEndDate] = useState<Date | undefined>();
+  const [editEndTime, setEditEndTime] = useState("");
   const [editTotalHours, setEditTotalHours] = useState("");
   const [editReason, setEditReason] = useState("");
 
@@ -131,13 +133,34 @@ export default function LeaveDetailPage() {
     if (!leave) return;
     setEditStartDate(new Date(leave.startDate));
     setEditStartTime(leave.startTime);
+    setEditEndDate(new Date(leave.endDate));
+    setEditEndTime(leave.endTime);
     setEditTotalHours(String(leave.totalHours));
     setEditReason(leave.reason || "");
     setEditing(true);
   }
 
+  // Live preview during edit
+  useEffect(() => {
+    if (!editing || !editStartDate || !editEndDate || !editStartTime || !editEndTime) return;
+    const params = new URLSearchParams({
+      startDate: editStartDate.toISOString(),
+      startTime: editStartTime,
+      endDate: editEndDate.toISOString(),
+      endTime: editEndTime,
+    });
+    fetch(`/api/leaves/preview?${params.toString()}`)
+      .then(async (r) => {
+        const d = await r.json().catch(() => null);
+        if (r.ok && d) {
+          setEditTotalHours(String(d.totalHours));
+        }
+      })
+      .catch(() => {});
+  }, [editing, editStartDate, editStartTime, editEndDate, editEndTime]);
+
   async function handleSaveEdit() {
-    if (!editStartDate || parseFloat(editTotalHours) <= 0) {
+    if (!editStartDate || !editEndDate || parseFloat(editTotalHours) <= 0) {
       toast.error(t("leaveDetail.errValidDateHours"));
       return;
     }
@@ -149,7 +172,8 @@ export default function LeaveDetailPage() {
         body: JSON.stringify({
           startDate: editStartDate.toISOString(),
           startTime: editStartTime,
-          totalHours: parseFloat(editTotalHours),
+          endDate: editEndDate?.toISOString(),
+          endTime: editEndTime,
           reason: editReason || undefined,
         }),
       });
@@ -216,7 +240,7 @@ export default function LeaveDetailPage() {
   }
 
   async function handleEditAndResubmit() {
-    if (!editStartDate || parseFloat(editTotalHours) <= 0) {
+    if (!editStartDate || !editEndDate || parseFloat(editTotalHours) <= 0) {
       toast.error(t("leaveDetail.errValidDateHours"));
       return;
     }
@@ -228,7 +252,8 @@ export default function LeaveDetailPage() {
         body: JSON.stringify({
           startDate: editStartDate.toISOString(),
           startTime: editStartTime,
-          totalHours: parseFloat(editTotalHours),
+          endDate: editEndDate?.toISOString(),
+          endTime: editEndTime,
           reason: editReason || undefined,
         }),
       });
@@ -358,14 +383,55 @@ export default function LeaveDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>{t("leaveDetail.totalHours")}</Label>
-                <Input
-                  type="number"
-                  min="0.25"
-                  step="0.25"
-                  value={editTotalHours}
-                  onChange={(e) => setEditTotalHours(e.target.value)}
-                />
+                <Label>Ngày kết thúc</Label>
+                <Popover>
+                  <PopoverTrigger
+                    className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
+                  >
+                    <CalendarIcon className="size-4 text-muted-foreground" />
+                    {editEndDate ? (
+                      format(editEndDate, "EEEE, MMMM d, yyyy")
+                    ) : (
+                      <span className="text-muted-foreground">{t("common.pickDate")}</span>
+                    )}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editEndDate}
+                      onSelect={(date) => setEditEndDate(date ?? undefined)}
+                      disabled={(date) => {
+                        const day = date.getDay();
+                        const beforeStart = editStartDate ? date < editStartDate : false;
+                        return day === 0 || day === 6 || beforeStart;
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Giờ kết thúc</Label>
+                <Select
+                  value={editEndTime}
+                  onValueChange={(val) => setEditEndTime(val as string)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("newLeave.selectTime")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOTS.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Tổng giờ nghỉ (làm tròn 0.25h): </span>
+                <span className="font-mono font-semibold">{editTotalHours || "—"}h</span>
               </div>
 
               <div className="space-y-2">

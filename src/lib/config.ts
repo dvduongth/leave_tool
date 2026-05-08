@@ -12,9 +12,14 @@ export type ConfigKey =
   | "SENIORITY_YEARS_PER_TIER"
   | "LOW_BALANCE_THRESHOLD_HOURS"
   | "GRACE_PERIOD_MONTHS"
+  | "CYCLE_START_MONTH"
   | "HIGH_OT_THRESHOLD_HOURS"
+  | "OT_CYCLE_START_MONTH"
+  | "OT_GRACE_MONTHS"
   | "MENSTRUAL_LEAVE_MAX_DAYS_PER_MONTH"
-  | "MENSTRUAL_LEAVE_DURATION_MINUTES";
+  | "MENSTRUAL_LEAVE_DURATION_MINUTES"
+  | "MATERNITY_LEAVE_DURATION_MINUTES"
+  | "MATERNITY_CHILD_AGE_LIMIT_MONTHS";
 
 export type ConfigType = "int" | "float" | "string";
 
@@ -22,7 +27,7 @@ interface ConfigDef {
   type: ConfigType;
   defaultValue: () => number | string;
   description: string;
-  group: "leave" | "ot" | "menstrual";
+  group: "leave" | "ot" | "menstrual" | "maternity";
 }
 
 export const CONFIG_DEFS: Record<ConfigKey, ConfigDef> = {
@@ -73,6 +78,36 @@ export const CONFIG_DEFS: Record<ConfigKey, ConfigDef> = {
     defaultValue: () => 30,
     description: "Thời lượng cho mỗi lượt (phút)",
     group: "menstrual",
+  },
+  CYCLE_START_MONTH: {
+    type: "int",
+    defaultValue: () => defaults.CYCLE_START_MONTH,
+    description: "Tháng bắt đầu cycle phép năm",
+    group: "leave",
+  },
+  OT_CYCLE_START_MONTH: {
+    type: "int",
+    defaultValue: () => defaults.CYCLE_START_MONTH,
+    description: "Tháng bắt đầu cycle OT bank",
+    group: "ot",
+  },
+  OT_GRACE_MONTHS: {
+    type: "int",
+    defaultValue: () => defaults.GRACE_PERIOD_MONTHS,
+    description: "Số tháng grace sau cycleEnd OT bank",
+    group: "ot",
+  },
+  MATERNITY_LEAVE_DURATION_MINUTES: {
+    type: "int",
+    defaultValue: () => 60,
+    description: "Thời lượng nghỉ thai sản mỗi ngày (phút)",
+    group: "maternity",
+  },
+  MATERNITY_CHILD_AGE_LIMIT_MONTHS: {
+    type: "int",
+    defaultValue: () => 12,
+    description: "Tuổi con tối đa để mẹ được hưởng chế độ thai sản (tháng)",
+    group: "maternity",
   },
 };
 

@@ -52,8 +52,12 @@ interface BalanceInfo {
 }
 
 interface PreviewResult {
+  startDate: string;
+  startTime: string;
   endDate: string;
   endTime: string;
+  totalHours: number;
+  totalMinutes: number;
   dailyBreakdown: { date: string; hours: number }[];
 }
 
@@ -62,13 +66,14 @@ export default function NewLeavePage() {
   const t = useT();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("08:00");
-  const [totalHours, setTotalHours] = useState("8");
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [endTime, setEndTime] = useState("17:00");
   const [reason, setReason] = useState("");
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch balance on mount
   useEffect(() => {
     fetch("/api/leaves/balance")
       .then((r) => (r.ok ? r.json() : null))
@@ -78,32 +83,43 @@ export default function NewLeavePage() {
       .catch(() => {});
   }, []);
 
-  // Preview calculation when inputs change
   useEffect(() => {
-    if (!startDate || !startTime || !totalHours || Number(totalHours) <= 0)
+    if (!startDate || !endDate || !startTime || !endTime) {
+      setPreview(null);
+      setPreviewError(null);
       return;
-
+    }
+    const sIso = startDate.toISOString();
+    const eIso = endDate.toISOString();
     const params = new URLSearchParams({
-      startDate: startDate.toISOString(),
+      startDate: sIso,
       startTime,
-      totalHours,
+      endDate: eIso,
+      endTime,
     });
-
     fetch(`/api/leaves/preview?${params.toString()}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data) setPreview(data);
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (r.ok && data) {
+          setPreview(data);
+          setPreviewError(null);
+        } else {
+          setPreview(null);
+          setPreviewError(data?.error ?? null);
+        }
       })
-      .catch(() => setPreview(null));
-  }, [startDate, startTime, totalHours]);
+      .catch(() => {
+        setPreview(null);
+        setPreviewError(null);
+      });
+  }, [startDate, startTime, endDate, endTime]);
 
   const parsedHours = useMemo(() => {
-    const n = parseFloat(totalHours);
-    return isNaN(n) || n <= 0 ? 0 : n;
-  }, [totalHours]);
+    return preview?.totalHours ?? 0;
+  }, [preview]);
 
   async function handleSave(submitAfter: boolean) {
-    if (!startDate || parsedHours <= 0) {
+    if (!startDate || !endDate || parsedHours <= 0) {
       toast.error(t("newLeave.errInvalid"));
       return;
     }
@@ -116,7 +132,8 @@ export default function NewLeavePage() {
         body: JSON.stringify({
           startDate: startDate.toISOString(),
           startTime,
-          totalHours: parsedHours,
+          endDate: endDate.toISOString(),
+          endTime,
           reason: reason || undefined,
         }),
       });
@@ -249,17 +266,61 @@ export default function NewLeavePage() {
             </Select>
           </div>
 
-          {/* Total Hours */}
+          {/* End Date */}
           <div className="space-y-2">
-            <Label>{t("newLeave.totalHours")}</Label>
-            <Input
-              type="number"
-              min="0.25"
-              step="0.25"
-              value={totalHours}
-              onChange={(e) => setTotalHours(e.target.value)}
-              placeholder="8"
-            />
+            <Label>Ngày kết thúc</Label>
+            <Popover>
+              <PopoverTrigger
+                className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
+              >
+                <CalendarIcon className="size-4 text-muted-foreground" />
+                {endDate ? (
+                  format(endDate, "EEEE, MMMM d, yyyy")
+                ) : (
+                  <span className="text-muted-foreground">{t("common.pickDate")}</span>
+                )}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => setEndDate(date ?? undefined)}
+                  disabled={(date) => {
+                    const day = date.getDay();
+                    const beforeStart = startDate ? date < startDate : false;
+                    return day === 0 || day === 6 || beforeStart;
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* End Time */}
+          <div className="space-y-2">
+            <Label>Giờ kết thúc</Label>
+            <Select value={endTime} onValueChange={(val) => setEndTime(val as string)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t("newLeave.selectTime")} />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_SLOTS.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Computed total hours (read-only) */}
+          <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Tổng giờ nghỉ (làm tròn 0.25h): </span>
+            <span className="font-mono font-semibold">
+              {preview ? `${preview.totalHours}h (${preview.totalMinutes} phút)` : "—"}
+            </span>
+            {previewError && (
+              <p className="mt-1 text-xs text-destructive">{previewError}</p>
+            )}
           </div>
 
           {/* Reason */}
@@ -275,8 +336,8 @@ export default function NewLeavePage() {
             />
           </div>
 
-          {/* Preview */}
-          {preview && startDate && (
+          {/* Preview / breakdown */}
+          {preview && startDate && endDate && preview.dailyBreakdown.length > 0 && (
             <>
               <Separator />
               <div className="rounded-lg bg-muted/50 p-4 space-y-2">
@@ -288,8 +349,7 @@ export default function NewLeavePage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">{t("newLeave.previewEnd")}</span>{" "}
-                    {format(new Date(preview.endDate), "MMM d, yyyy")}{" "}
-                    {preview.endTime}
+                    {format(endDate, "MMM d, yyyy")} {endTime}
                   </div>
                 </div>
                 {preview.dailyBreakdown.length > 1 && (

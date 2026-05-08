@@ -31,6 +31,10 @@ export async function getVisibleEmployeeIds(
   }
 
   if (user.role === Role.MANAGER) {
+    // Manager can only see their own department's data. Reject cross-dept queries.
+    if (departmentId && departmentId !== user.departmentId) {
+      return [];
+    }
     const subordinates = await prisma.employee.findMany({
       where: { managerId: user.id },
       select: { id: true },

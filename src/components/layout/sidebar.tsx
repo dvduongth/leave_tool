@@ -15,6 +15,8 @@ import {
   Settings,
   Heart,
   Sliders,
+  CalendarRange,
+  Baby,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -38,12 +40,18 @@ const navItems: NavItem[] = [
     roles: ["MANAGER", "HEAD", "ADMIN"],
   },
   { labelKey: "nav.ot", href: "/ot", icon: Clock },
+  { labelKey: "nav.shift", href: "/shift", icon: CalendarRange },
   { labelKey: "nav.flexTime", href: "/flex-time", icon: Timer },
   {
     labelKey: "nav.wellness",
     href: "/wellness",
     icon: Heart,
     femaleOnly: true,
+  },
+  {
+    labelKey: "nav.maternity",
+    href: "/maternity",
+    icon: Baby,
   },
   {
     labelKey: "nav.reports",

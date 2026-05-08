@@ -11,6 +11,7 @@ import {
 } from "@/lib/reports";
 import { messages, translate, type Messages } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n/server";
+import { logAudit, getRequestIp } from "@/lib/audit";
 
 // RFC 4180 CSV escape: wrap in quotes if the value contains a comma,
 // double-quote, CR, or LF. Inner quotes are doubled.
@@ -241,6 +242,21 @@ export async function GET(request: Request) {
     const filename = requestedFilename
       ? sanitizeFilename(requestedFilename, fallback)
       : fallback;
+
+    await logAudit({
+      userId: user.id,
+      action: "REPORT_EXPORT",
+      entity: "report",
+      metadata: {
+        type,
+        date: queryDate.toISOString().slice(0, 10),
+        departmentId: departmentId || null,
+        filename,
+        role: user.role,
+        visibleEmployeeCount: employeeIds?.length ?? null,
+      },
+      ipAddress: getRequestIp(request),
+    });
 
     return new Response(csv, {
       status: 200,

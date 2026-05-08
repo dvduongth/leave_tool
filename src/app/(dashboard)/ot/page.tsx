@@ -84,6 +84,23 @@ export default function OTPage() {
   const [formEnd, setFormEnd] = useState("20:00");
   const [formNote, setFormNote] = useState("");
 
+  interface OTBalanceCycle {
+    cycleYear: number;
+    cycleStart: string;
+    cycleEnd: string;
+    graceDeadline: string;
+    totalMinutes: number;
+    usedMinutes: number;
+    pendingMinutes: number;
+    remainingMinutes: number;
+  }
+  interface OTBankInfo {
+    current: OTBalanceCycle;
+    grace: OTBalanceCycle | null;
+    totalRemainingMinutes: number;
+  }
+  const [bank, setBank] = useState<OTBankInfo | null>(null);
+
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
@@ -98,9 +115,20 @@ export default function OTPage() {
     }
   }, [month]);
 
+  const fetchBank = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ot/balance");
+      if (res.ok) setBank(await res.json());
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchRecords();
   }, [fetchRecords]);
+
+  useEffect(() => {
+    fetchBank();
+  }, [fetchBank]);
 
   const myRecords = records.filter(
     (r) => !r.employee || r.employee.id === userId
@@ -177,6 +205,7 @@ export default function OTPage() {
             : t("ot.toastRejected")
         );
         fetchRecords();
+        fetchBank();
       } else {
         const data = await res.json();
         toast.error(data.error || t("ot.errActionFailed"));
@@ -221,6 +250,36 @@ export default function OTPage() {
           </CardContent>
         </Card>
       </div>
+
+      {bank && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-3 text-sm">
+            <div className="flex items-center gap-2 font-medium">
+              <Clock className="size-4 text-muted-foreground" />
+              OT Bank
+            </div>
+            <div>
+              <span className="text-muted-foreground">Current cycle {bank.current.cycleYear}:</span>{" "}
+              <span className="font-mono">{bank.current.remainingMinutes} phút</span>{" "}
+              <span className="text-muted-foreground text-xs">
+                (hết hạn {bank.current.graceDeadline})
+              </span>
+            </div>
+            {bank.grace && (
+              <div>
+                <span className="text-muted-foreground">Grace cycle {bank.grace.cycleYear}:</span>{" "}
+                <span className="font-mono">{bank.grace.remainingMinutes} phút</span>{" "}
+                <span className="text-amber-600 text-xs">
+                  (hết hạn {bank.grace.graceDeadline})
+                </span>
+              </div>
+            )}
+            <div className="ml-auto font-semibold">
+              Tổng khả dụng: <span className="font-mono">{bank.totalRemainingMinutes} phút</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="mine">
         <TabsList>

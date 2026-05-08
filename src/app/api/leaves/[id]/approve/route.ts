@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { deductLeave } from "@/lib/leave-calculator";
+import { applyLeaveApproval } from "@/lib/ot-bank";
 import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { ApprovalAction, LeaveStatus, Role } from "@/generated/prisma";
@@ -65,15 +65,14 @@ export async function POST(
           },
         });
 
-        // Deduct from leave balance
-        if (leave.balanceId) {
-          await deductLeave(leave.employeeId, leave.totalHours, leave.startDate);
-          // Reduce pending_hours
-          await prisma.leaveBalance.update({
-            where: { id: leave.balanceId },
-            data: { pendingHours: { decrement: leave.totalHours } },
-          });
-        }
+        // Consume OT bank then deduct remaining from leave balance
+        await applyLeaveApproval({
+          leaveRequestId: id,
+          employeeId: leave.employeeId,
+          totalHours: leave.totalHours,
+          balanceId: leave.balanceId,
+          asOf: leave.startDate,
+        });
 
         // Create history entries
         await prisma.leaveRequestHistory.createMany({
@@ -192,15 +191,14 @@ export async function POST(
         },
       });
 
-      // Deduct from leave balance
-      if (leave.balanceId) {
-        await deductLeave(leave.employeeId, leave.totalHours, leave.startDate);
-        // Reduce pending_hours
-        await prisma.leaveBalance.update({
-          where: { id: leave.balanceId },
-          data: { pendingHours: { decrement: leave.totalHours } },
-        });
-      }
+      // Consume OT bank then deduct remaining from leave balance
+      await applyLeaveApproval({
+        leaveRequestId: id,
+        employeeId: leave.employeeId,
+        totalHours: leave.totalHours,
+        balanceId: leave.balanceId,
+        asOf: leave.startDate,
+      });
 
       // Create history entry
       await prisma.leaveRequestHistory.create({

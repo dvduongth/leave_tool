@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { restoreLeave } from "@/lib/leave-calculator";
+import { reverseLeaveApproval } from "@/lib/ot-bank";
 import { notifyLeaveEventFromRequest } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
@@ -76,10 +76,13 @@ export async function POST(
       include: { employee: { select: { id: true, name: true, email: true } } },
     });
 
-    // Restore balance (only NOW, after approval)
-    if (leave.balanceId) {
-      await restoreLeave(leave.employeeId, leave.totalHours, leave.balanceId);
-    }
+    // Restore: refund OT consumed + leave balance hours used
+    await reverseLeaveApproval({
+      leaveRequestId: id,
+      employeeId: leave.employeeId,
+      totalHours: leave.totalHours,
+      asOf: leave.startDate,
+    });
 
     await prisma.leaveRequestHistory.create({
       data: {

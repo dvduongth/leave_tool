@@ -267,7 +267,7 @@ export default function ReportsPage() {
           </PopoverContent>
         </Popover>
 
-        {departments.length > 0 && (
+        {departments.length > 1 && (
           <Select
             value={departmentId}
             onValueChange={(val) => setDepartmentId(val ?? "ALL")}

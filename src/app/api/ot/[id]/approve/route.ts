@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
 import { createNotification } from "@/lib/notifications";
+import { accrueOTBank } from "@/lib/ot-bank";
 import { Role } from "@/generated/prisma";
 
 export async function POST(
@@ -52,9 +53,13 @@ export async function POST(
       );
     }
 
-    const updated = await prisma.oTRecord.update({
-      where: { id },
-      data: { status: "APPROVED" },
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.oTRecord.update({
+        where: { id },
+        data: { status: "APPROVED" },
+      });
+      await accrueOTBank(tx, id, record.employeeId, record.date, record.otMinutes);
+      return u;
     });
 
     await createNotification(

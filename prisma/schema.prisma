@@ -59,6 +59,11 @@ enum FlexMonthStatus {
   SETTLED
 }
 
+enum MaternityMode {
+  EARLY_LEAVE
+  LATE_ARRIVAL
+}
+
 model Department {
   id        String     @id @default(uuid())
   name      String
@@ -70,20 +75,23 @@ model Department {
 }
 
 model Employee {
-  id           String    @id @default(uuid())
-  name         String
-  email        String    @unique
-  password     String
-  departmentId String    @map("department_id")
-  managerId    String?   @map("manager_id")
-  role         Role      @default(EMPLOYEE)
-  workShift    ShiftType @default(A) @map("work_shift")
-  preferredLocale String @default("vi") @map("preferred_locale")
-  joinDate     DateTime? @map("join_date") @db.Date
-  gender       Gender    @default(UNSPECIFIED)
-  emailNotifEnabled Boolean @default(true) @map("email_notif_enabled")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  password            String
+  departmentId        String    @map("department_id")
+  managerId           String?   @map("manager_id")
+  role                Role      @default(EMPLOYEE)
+  workShift           ShiftType @default(A) @map("work_shift")
+  preferredLocale     String    @default("vi") @map("preferred_locale")
+  joinDate            DateTime? @map("join_date") @db.Date
+  birthDate           DateTime? @map("birth_date") @db.Date
+  phone               String?
+  gender              Gender    @default(UNSPECIFIED)
+  emailNotifEnabled   Boolean   @default(true) @map("email_notif_enabled")
+  isActive            Boolean   @default(true) @map("is_active")
+  mustChangePassword  Boolean   @default(true) @map("must_change_password")
+  createdAt           DateTime  @default(now()) @map("created_at")
 
   department         Department             @relation("DepartmentEmployees", fields: [departmentId], references: [id])
   manager            Employee?              @relation("ManagerSubordinates", fields: [managerId], references: [id])
@@ -93,26 +101,22 @@ model Employee {
   leaveRequests      LeaveRequest[]
   leaveHistoryActor  LeaveRequestHistory[]  @relation("HistoryActor")
   otRecords          OTRecord[]
+  otBalances         OTBalance[]
   flexTimeRecords    FlexTimeRecord[]
   flexTimeApprovals  FlexTimeRecord[]       @relation("FlexApprover")
   flexMonthlySummary FlexTimeMonthlySummary[]
   notifications      Notification[]
   menstrualLeaves    MenstrualLeave[]
+  weekShifts         EmployeeWeekShift[]
+  shiftChangeRequests ShiftChangeRequest[]
+  shiftApprovals      ShiftChangeRequest[]   @relation("ShiftApprover")
+  children            EmployeeChild[]
+  childApprovals      EmployeeChild[]        @relation("ChildApprover")
+  maternityLeaves     MaternityLeave[]
+  maternityApprovals  MaternityLeave[]       @relation("MaternityApprover")
+  auditLogs           AuditLog[]
 
   @@map("employees")
-}
-
-model WorkShift {
-  id           ShiftType @id
-  label        String
-  weekdayStart String    @map("weekday_start")
-  weekdayEnd   String    @map("weekday_end")
-  fridayStart  String    @map("friday_start")
-  fridayEnd    String    @map("friday_end")
-  lunchStart   String    @default("12:00") @map("lunch_start")
-  lunchEnd     String    @default("13:00") @map("lunch_end")
-
-  @@map("work_shifts")
 }
 
 model LeaveBalance {
@@ -134,30 +138,32 @@ model LeaveBalance {
 }
 
 model LeaveRequest {
-  id              String          @id @default(uuid())
-  employeeId      String          @map("employee_id")
-  balanceId       String?         @map("balance_id")
-  startDate       DateTime        @map("start_date") @db.Date
-  startTime       String          @map("start_time")
-  endDate         DateTime        @map("end_date") @db.Date
-  endTime         String          @map("end_time")
-  totalHours      Float           @map("total_hours")
-  reason          String?
-  status          LeaveStatus     @default(DRAFT)
-  isAutoDeduct    Boolean         @default(false) @map("is_auto_deduct")
-  managerAction   ApprovalAction? @map("manager_action")
-  managerComment  String?         @map("manager_comment")
-  managerActionAt DateTime?       @map("manager_action_at")
-  headAction      ApprovalAction? @map("head_action")
-  headComment     String?         @map("head_comment")
-  headActionAt    DateTime?       @map("head_action_at")
-  cancelledAt     DateTime?       @map("cancelled_at")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+  id                String          @id @default(uuid())
+  employeeId        String          @map("employee_id")
+  balanceId         String?         @map("balance_id")
+  startDate         DateTime        @map("start_date") @db.Date
+  startTime         String          @map("start_time")
+  endDate           DateTime        @map("end_date") @db.Date
+  endTime           String          @map("end_time")
+  totalHours        Float           @map("total_hours")
+  otConsumedMinutes Int             @default(0) @map("ot_consumed_minutes")
+  reason            String?
+  status            LeaveStatus     @default(DRAFT)
+  isAutoDeduct      Boolean         @default(false) @map("is_auto_deduct")
+  managerAction     ApprovalAction? @map("manager_action")
+  managerComment    String?         @map("manager_comment")
+  managerActionAt   DateTime?       @map("manager_action_at")
+  headAction        ApprovalAction? @map("head_action")
+  headComment       String?         @map("head_comment")
+  headActionAt      DateTime?       @map("head_action_at")
+  cancelledAt       DateTime?       @map("cancelled_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  employee Employee              @relation(fields: [employeeId], references: [id])
-  balance  LeaveBalance?         @relation(fields: [balanceId], references: [id])
-  history  LeaveRequestHistory[]
+  employee       Employee              @relation(fields: [employeeId], references: [id])
+  balance        LeaveBalance?         @relation(fields: [balanceId], references: [id])
+  history        LeaveRequestHistory[]
+  otConsumptions LeaveOTConsumption[]
 
   @@index([employeeId, status])
   @@index([status])
@@ -181,20 +187,58 @@ model LeaveRequestHistory {
 }
 
 model OTRecord {
-  id         String       @id @default(uuid())
-  employeeId String       @map("employee_id")
-  date       DateTime     @db.Date
-  otStart    String       @map("ot_start")
-  otEnd      String       @map("ot_end")
-  otMinutes  Int          @map("ot_minutes")
-  note       String?
-  status     RecordStatus @default(PENDING)
-  createdAt  DateTime     @default(now()) @map("created_at")
+  id          String       @id @default(uuid())
+  employeeId  String       @map("employee_id")
+  date        DateTime     @db.Date
+  otStart     String       @map("ot_start")
+  otEnd       String       @map("ot_end")
+  otMinutes   Int          @map("ot_minutes")
+  note        String?
+  status      RecordStatus @default(PENDING)
+  otBalanceId String?      @map("ot_balance_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee  Employee   @relation(fields: [employeeId], references: [id])
+  otBalance OTBalance? @relation(fields: [otBalanceId], references: [id])
 
   @@index([employeeId, date])
   @@map("ot_records")
+}
+
+model OTBalance {
+  id             String   @id @default(uuid())
+  employeeId     String   @map("employee_id")
+  cycleYear      Int      @map("cycle_year")
+  cycleStart     DateTime @map("cycle_start") @db.Date
+  cycleEnd       DateTime @map("cycle_end") @db.Date
+  graceDeadline  DateTime @map("grace_deadline") @db.Date
+  totalMinutes   Int      @default(0) @map("total_minutes")
+  usedMinutes    Int      @default(0) @map("used_minutes")
+  pendingMinutes Int      @default(0) @map("pending_minutes")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  employee     Employee             @relation(fields: [employeeId], references: [id])
+  otRecords    OTRecord[]
+  consumptions LeaveOTConsumption[]
+
+  @@unique([employeeId, cycleYear])
+  @@index([employeeId, cycleStart, cycleEnd])
+  @@map("ot_balances")
+}
+
+model LeaveOTConsumption {
+  id             String   @id @default(uuid())
+  leaveRequestId String   @map("leave_request_id")
+  otBalanceId   String   @map("ot_balance_id")
+  minutes        Int
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  otBalance    OTBalance    @relation(fields: [otBalanceId], references: [id])
+
+  @@index([leaveRequestId])
+  @@index([otBalanceId])
+  @@map("leave_ot_consumptions")
 }
 
 model FlexTimeRecord {
@@ -258,10 +302,87 @@ model MenstrualLeave {
   @@map("menstrual_leaves")
 }
 
+model EmployeeWeekShift {
+  id            String    @id @default(uuid())
+  employeeId    String    @map("employee_id")
+  dayOfWeek     Int       @map("day_of_week")
+  shiftType     ShiftType @map("shift_type")
+  effectiveDate DateTime  @map("effective_date") @db.Date
+  endDate       DateTime? @map("end_date") @db.Date
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, dayOfWeek, effectiveDate])
+  @@index([employeeId, effectiveDate])
+  @@map("employee_week_shifts")
+}
+
+model ShiftChangeRequest {
+  id             String       @id @default(uuid())
+  employeeId     String       @map("employee_id")
+  effectiveDate  DateTime     @map("effective_date") @db.Date
+  weeklyShifts   Json         @map("weekly_shifts")
+  reason         String?
+  status         RecordStatus @default(PENDING)
+  approvedBy     String?      @map("approved_by")
+  approvedAt     DateTime?    @map("approved_at")
+  managerComment String?      @map("manager_comment")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  employee Employee  @relation(fields: [employeeId], references: [id])
+  approver Employee? @relation("ShiftApprover", fields: [approvedBy], references: [id])
+
+  @@index([employeeId, status])
+  @@map("shift_change_requests")
+}
+
+model EmployeeChild {
+  id         String       @id @default(uuid())
+  employeeId String       @map("employee_id")
+  birthDate  DateTime     @map("birth_date") @db.Date
+  name       String?
+  status     RecordStatus @default(PENDING)
+  approvedBy String?      @map("approved_by")
+  approvedAt DateTime?    @map("approved_at")
+  note       String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  employee        Employee         @relation(fields: [employeeId], references: [id])
+  approver        Employee?        @relation("ChildApprover", fields: [approvedBy], references: [id])
+  maternityLeaves MaternityLeave[]
+
+  @@index([employeeId, birthDate])
+  @@map("employee_children")
+}
+
+model MaternityLeave {
+  id         String        @id @default(uuid())
+  employeeId String        @map("employee_id")
+  childId    String        @map("child_id")
+  date       DateTime      @db.Date
+  mode       MaternityMode
+  startTime  String        @map("start_time")
+  endTime    String        @map("end_time")
+  note       String?
+  status     RecordStatus  @default(PENDING)
+  approvedBy String?       @map("approved_by")
+  approvedAt DateTime?     @map("approved_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  employee Employee      @relation(fields: [employeeId], references: [id])
+  child    EmployeeChild @relation(fields: [childId], references: [id])
+  approver Employee?     @relation("MaternityApprover", fields: [approvedBy], references: [id])
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+  @@map("maternity_leaves")
+}
+
 model AppConfig {
   key         String   @id
   value       String
-  type        String   // "int" | "float" | "string"
+  type        String
   description String?
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -281,4 +402,21 @@ model Notification {
 
   @@index([userId, read])
   @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String?
+  entityId  String?  @map("entity_id")
+  metadata  Json?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user Employee? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
 }

@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import { getActiveBalance } from "@/lib/leave-calculator";
-import { calculateLeaveEnd } from "@/lib/working-hours";
+import { calculateHoursFromRange } from "@/lib/working-hours";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
 
@@ -103,18 +103,29 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { startDate, startTime, totalHours, reason } = body;
+    const { startDate, startTime, endDate: endDateInput, endTime: endTimeInput, reason } = body;
 
-    // Validate totalHours is multiple of 0.25
-    if (!totalHours || totalHours <= 0 || (totalHours * 100) % 25 !== 0) {
+    if (!startDate || !startTime || !endDateInput || !endTimeInput) {
       return Response.json(
-        { error: "totalHours must be a positive multiple of 0.25" },
+        { error: "startDate, startTime, endDate, endTime are required" },
+        { status: 400 }
+      );
+    }
+
+    const tre = /^\d{2}:\d{2}$/;
+    if (!tre.test(startTime) || !tre.test(endTimeInput)) {
+      return Response.json(
+        { error: "startTime and endTime must be in HH:MM format" },
         { status: 400 }
       );
     }
 
     // Validate startDate >= today
     const start = new Date(startDate);
+    const endDateParsed = new Date(endDateInput);
+    if (isNaN(start.getTime()) || isNaN(endDateParsed.getTime())) {
+      return Response.json({ error: "Invalid date" }, { status: 400 });
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (start < today) {
@@ -124,37 +135,38 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate startTime format
-    if (!startTime || !/^\d{2}:\d{2}$/.test(startTime)) {
-      return Response.json(
-        { error: "startTime must be in HH:MM format" },
-        { status: 400 }
-      );
-    }
-
-    // Get employee's shift
-    const employee = await prisma.employee.findUnique({
-      where: { id: user.id },
-      select: { workShift: true },
-    });
-    if (!employee) {
-      return Response.json({ error: "Employee not found" }, { status: 404 });
-    }
-
     // Get holidays
     const holidays = await prisma.holiday.findMany({
       select: { date: true },
     });
     const holidayDates = holidays.map((h) => h.date);
 
-    // Calculate end date/time
-    const { endDate, endTime } = calculateLeaveEnd(
-      employee.workShift,
-      start,
-      startTime,
-      totalHours,
-      holidayDates
-    );
+    // Compute totalHours from the requested range (rounded to 0.25h server-side)
+    let computed;
+    try {
+      computed = await calculateHoursFromRange(
+        user.id,
+        start,
+        startTime,
+        endDateParsed,
+        endTimeInput,
+        holidayDates
+      );
+    } catch (err) {
+      const m = err instanceof Error ? err.message : "Invalid range";
+      return Response.json({ error: m }, { status: 400 });
+    }
+
+    const totalHours = computed.totalHours;
+    const endDate = endDateParsed;
+    const endTime = endTimeInput;
+
+    if (totalHours <= 0) {
+      return Response.json(
+        { error: "Range produces 0 working hours (all weekend/holiday)" },
+        { status: 400 }
+      );
+    }
 
     // Check sufficient balance
     const { currentBalance, graceBalance } = await getActiveBalance(user.id, start);

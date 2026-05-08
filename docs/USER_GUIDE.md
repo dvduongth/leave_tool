@@ -118,6 +118,39 @@ Có filter theo phòng ban (Head / Admin) và xuất CSV.
 - `Holidays`: cấu hình ngày lễ theo năm. Ảnh hưởng tính giờ + hệ số OT.
 - Tạo nhân viên mới → hệ thống tự cấp 96h phép cho cycle hiện tại.
 
+## 9.1. Đổi ca làm theo tuần
+
+`Shift` cho phép xem lịch ca hiện tại và đăng ký đổi ca theo từng ngày trong tuần (T2–T6 có thể là ca A/B/C khác nhau).
+
+1. **Đăng ký đổi ca**: chọn ngày hiệu lực và lịch ca mới cho 5 ngày trong tuần. Lý do (tuỳ chọn).
+2. **Manager duyệt** (1 cấp): Manager của nhân viên duyệt qua tab "Chờ duyệt".
+3. **Áp dụng**: khi duyệt, hệ thống đóng các dòng EmployeeWeekShift cũ (`endDate = effectiveDate − 1`) và tạo các dòng mới với `effectiveDate` tương ứng.
+4. **Constraint**: mỗi nhân viên chỉ có 1 yêu cầu đang chờ duyệt tại 1 thời điểm.
+
+## 9.2. OT Bank — quỹ giờ OT bù phép
+
+OT đã duyệt được tích luỹ vào **OT bank** theo cycle (1/6 → 31/5 năm sau, grace 2 tháng đến 31/7 → tổng 14 tháng dùng được). Đơn vị: **phút** (không round 0.25h).
+
+- Khi xin nghỉ phép và đơn được duyệt → hệ thống **tự động dùng OT bank trước**, ưu tiên cycle grace (sắp hết hạn), rồi đến cycle hiện tại, rồi mới trừ vào quỹ phép năm.
+- Khi huỷ đơn nghỉ đã duyệt → restore lại OT bank.
+- Cron `1/6` hàng năm tạo cycle mới + dọn các cycle quá hạn.
+
+## 9.3. Chế độ thai sản
+
+Áp dụng cho nhân viên nữ có **con dưới 1 tuổi**. Mỗi ngày được nghỉ sớm hoặc đi muộn 1 tiếng.
+
+1. **Khai báo con**: vào `Maternity` → "Khai báo con" → nhập ngày sinh. Manager duyệt (1 cấp).
+2. **Đăng ký nghỉ**: sau khi khai báo được duyệt, vào "Đăng ký nghỉ" → chọn ngày + chế độ (về sớm / đi muộn 1 tiếng). Manager duyệt từng đăng ký.
+3. **Eligibility**: tự động hết hiệu lực khi con tròn 12 tháng.
+
+## 9.4. Tài khoản cá nhân
+
+Tại `Settings`:
+- **Thông tin cá nhân**: tự sửa Họ tên, SĐT, Giới tính, Ngôn ngữ.
+- **Đổi mật khẩu**: ≥ 8 ký tự, có cả chữ và số.
+- **Email notifications**: bật/tắt nhận email.
+- **Lần đầu đăng nhập**: bắt buộc đổi mật khẩu mặc định trước khi tiếp tục.
+
 ## 10. FAQ
 
 **Nghỉ nửa buổi sáng thì ghi thế nào?**
