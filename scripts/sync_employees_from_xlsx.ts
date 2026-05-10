@@ -35,22 +35,37 @@ wb = load_workbook('D:/info.xlsx')
 ws = wb['TTNV']
 GREEN = 'FFD9EAD3'
 out = []
+
+def parse_date(v):
+    if v is None: return None
+    if hasattr(v, 'strftime'): return v.strftime('%Y-%m-%d')
+    s = str(v).strip()
+    # Try DD/MM/YYYY
+    import re
+    m = re.match(r'^(\\d{1,2})/(\\d{1,2})/(\\d{4})$', s)
+    if m:
+        d, mo, y = m.groups()
+        return f'{y}-{int(mo):02d}-{int(d):02d}'
+    return None
+
 for r in range(2, ws.max_row+1):
     name = ws.cell(r, 2).value
     if not name: continue
     fill = ws.cell(r, 2).fill.start_color.rgb if ws.cell(r, 2).fill.start_color else None
-    if fill != GREEN: continue
     role_cell = ws.cell(r, 4).value
     role = role_cell if isinstance(role_cell, str) and not role_cell.startswith('=') else ''
+    is_green = fill == GREEN
+    has_role = bool(role.strip())
+    if not (is_green or has_role): continue
     ngay_vao = ws.cell(r, 10).value
     email = ws.cell(r, 13).value
     bday = ws.cell(r, 3).value
     phone = ws.cell(r, 11).value
     out.append({
         'name': name,
-        'rawRole': role,
-        'joinDate': ngay_vao.strftime('%Y-%m-%d') if hasattr(ngay_vao,'strftime') else None,
-        'birthDate': bday.strftime('%Y-%m-%d') if hasattr(bday,'strftime') else None,
+        'rawRole': role.strip(),
+        'joinDate': parse_date(ngay_vao),
+        'birthDate': parse_date(bday),
         'phone': str(phone).replace(' ','') if phone else None,
         'email': email,
     })
@@ -69,9 +84,9 @@ print(json.dumps(out, ensure_ascii=False))
 
 function mapRole(rawRole: string): "EMPLOYEE" | "MANAGER" | "HEAD" | "ADMIN" {
   const t = rawRole.trim().toLowerCase();
-  if (t.includes("giám đốc") || t.includes("giam doc") || t === "head") return "HEAD";
+  if (t === "admin" || t.includes("giám đốc") || t.includes("giam doc")) return "ADMIN";
+  if (t === "head") return "HEAD";
   if (t === "manager") return "MANAGER";
-  if (t === "admin") return "ADMIN";
   return "EMPLOYEE";
 }
 
@@ -79,26 +94,39 @@ async function main() {
   const xlsxList = readXlsxViaPython();
   console.log(`Read ${xlsxList.length} active employees from xlsx`);
 
-  // Identify the Director (Giám đốc) — they will manage everyone else
-  const director = xlsxList.find((e) => mapRole(e.rawRole) === "HEAD");
-  if (!director) throw new Error("No 'Giám Đốc' found in xlsx");
-  console.log(`Director: ${director.name} <${director.email}>`);
+  // Identify Director (highest role: ADMIN > HEAD). All other employees report
+  // to the Director. If both ADMIN and HEAD exist, HEAD reports to ADMIN.
+  const adminFromXlsx = xlsxList.find((e) => mapRole(e.rawRole) === "ADMIN");
+  const headFromXlsx = xlsxList.find((e) => mapRole(e.rawRole) === "HEAD");
+  const director = adminFromXlsx ?? headFromXlsx;
+  if (!director) throw new Error("No ADMIN/HEAD found in xlsx");
+  console.log(`Director: ${director.name} <${director.email}> (${mapRole(director.rawRole)})`);
 
   const dept = await prisma.department.findFirstOrThrow();
   const empPwd = await bcrypt.hash("12345678", 10);
 
-  // Step 1: upsert each xlsx employee. Pass 1: ensure director exists FIRST so
-  // others can FK their managerId to director.
+  // Pass: insert ADMIN first, then HEAD (manager=ADMIN), then MANAGER+EMPLOYEE
+  // (manager=Director). This avoids FK ordering issues.
   const orderedList = [
+    ...xlsxList.filter((e) => mapRole(e.rawRole) === "ADMIN"),
     ...xlsxList.filter((e) => mapRole(e.rawRole) === "HEAD"),
-    ...xlsxList.filter((e) => mapRole(e.rawRole) !== "HEAD"),
+    ...xlsxList.filter((e) => mapRole(e.rawRole) === "MANAGER"),
+    ...xlsxList.filter((e) => mapRole(e.rawRole) === "EMPLOYEE"),
   ];
 
   let directorRecord: { id: string } | null = null;
+  let adminRecord: { id: string } | null = null;
   for (const e of orderedList) {
     const role = mapRole(e.rawRole);
-    const isDirector = role === "HEAD";
-    const managerId = isDirector ? null : directorRecord?.id ?? null;
+    let managerId: string | null = null;
+    if (role === "ADMIN") {
+      managerId = null; // top of the tree
+    } else if (role === "HEAD") {
+      managerId = adminRecord?.id ?? null;
+    } else {
+      managerId = directorRecord?.id ?? adminRecord?.id ?? null;
+    }
+    const isDirector = role === "ADMIN" || (role === "HEAD" && !adminRecord);
 
     const updated = await prisma.employee.upsert({
       where: { email: e.email },
@@ -125,20 +153,30 @@ async function main() {
         mustChangePassword: true,
       },
     });
+    if (role === "ADMIN") adminRecord = updated;
     if (isDirector) directorRecord = updated;
+    const mgrLabel = !managerId
+      ? "—"
+      : managerId === adminRecord?.id
+      ? "Admin"
+      : "Director";
     console.log(
-      `  ${role.padEnd(8)} ${e.name.padEnd(28)} mgr=${managerId ? "Director" : "—"} join=${e.joinDate ?? "—"}`
+      `  ${role.padEnd(8)} ${e.name.padEnd(28)} mgr=${mgrLabel} join=${e.joinDate ?? "—"} email=${e.email}`
     );
   }
 
   if (!directorRecord) throw new Error("Director upsert returned null");
 
-  // Step 2: set department.headId to director
+  // Department head: prefer xlsx HEAD; fall back to Director
+  const deptHead = headFromXlsx
+    ? await prisma.employee.findUnique({ where: { email: headFromXlsx.email } })
+    : null;
+  const deptHeadId = deptHead?.id ?? directorRecord.id;
   await prisma.department.update({
     where: { id: dept.id },
-    data: { headId: directorRecord.id },
+    data: { headId: deptHeadId },
   });
-  console.log(`✓ Department head set to ${director.name}`);
+  console.log(`✓ Department head set to ${deptHead?.name ?? director.name}`);
 
   // Step 3: identify employees in DB but NOT in xlsx list → delete (cascade)
   const xlsxEmails = new Set(xlsxList.map((e) => e.email.toLowerCase()));
