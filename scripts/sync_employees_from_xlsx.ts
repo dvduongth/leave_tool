@@ -33,14 +33,12 @@ from openpyxl import load_workbook
 sys.stdout.reconfigure(encoding='utf-8')
 wb = load_workbook('D:/info.xlsx')
 ws = wb['TTNV']
-GREEN = 'FFD9EAD3'
 out = []
 
 def parse_date(v):
     if v is None: return None
     if hasattr(v, 'strftime'): return v.strftime('%Y-%m-%d')
     s = str(v).strip()
-    # Try DD/MM/YYYY
     import re
     m = re.match(r'^(\\d{1,2})/(\\d{1,2})/(\\d{4})$', s)
     if m:
@@ -48,21 +46,18 @@ def parse_date(v):
         return f'{y}-{int(mo):02d}-{int(d):02d}'
     return None
 
+# Final list: take ALL rows with a name, regardless of fill color or role.
 for r in range(2, ws.max_row+1):
     name = ws.cell(r, 2).value
-    if not name: continue
-    fill = ws.cell(r, 2).fill.start_color.rgb if ws.cell(r, 2).fill.start_color else None
+    if not name or not str(name).strip(): continue
     role_cell = ws.cell(r, 4).value
     role = role_cell if isinstance(role_cell, str) and not role_cell.startswith('=') else ''
-    is_green = fill == GREEN
-    has_role = bool(role.strip())
-    if not (is_green or has_role): continue
     ngay_vao = ws.cell(r, 10).value
     email = ws.cell(r, 13).value
     bday = ws.cell(r, 3).value
     phone = ws.cell(r, 11).value
     out.append({
-        'name': name,
+        'name': str(name).strip(),
         'rawRole': role.strip(),
         'joinDate': parse_date(ngay_vao),
         'birthDate': parse_date(bday),
@@ -179,9 +174,9 @@ async function main() {
   console.log(`✓ Department head set to ${deptHead?.name ?? director.name}`);
 
   // Step 3: identify employees in DB but NOT in xlsx list → delete (cascade)
+  // Final list = xlsx only. Any employee not in xlsx (including hachiko system
+  // admin) will be removed.
   const xlsxEmails = new Set(xlsxList.map((e) => e.email.toLowerCase()));
-  // Also keep admin
-  xlsxEmails.add("hachiko@sgsa.jp");
   const dbEmployees = await prisma.employee.findMany({
     select: { id: true, name: true, email: true, role: true },
   });
