@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
 import { calculateOTMinutes } from "@/lib/ot-calculator";
+import { createNotification } from "@/lib/notifications";
 import { Role } from "@/generated/prisma";
 
 export async function GET(request: NextRequest) {
@@ -95,6 +96,32 @@ export async function POST(request: NextRequest) {
         status: "PENDING",
       },
     });
+
+    // Notify approver(s) so it surfaces on /approvals or /ot pending list.
+    const employee = await prisma.employee.findUnique({
+      where: { id: user.id },
+      select: { name: true, managerId: true, departmentId: true },
+    });
+    const dept = employee?.departmentId
+      ? await prisma.department.findUnique({
+          where: { id: employee.departmentId },
+          select: { headId: true },
+        })
+      : null;
+    const dateStr = parsedDate.toISOString().slice(0, 10);
+    const recipients = new Set<string>();
+    if (employee?.managerId) recipients.add(employee.managerId);
+    if (dept?.headId && dept.headId !== user.id) recipients.add(dept.headId);
+    for (const r of recipients) {
+      await createNotification(
+        r,
+        "Yêu cầu OT mới",
+        `${employee?.name ?? "Nhân viên"} đăng ký OT ngày ${dateStr} (${otMinutes} phút)`,
+        `/ot`,
+        "ot",
+        record.id
+      );
+    }
 
     return Response.json(record, { status: 201 });
   } catch (error: unknown) {

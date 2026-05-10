@@ -193,6 +193,35 @@ export async function PATCH(
       return Response.json({ error: "No changes provided" }, { status: 400 });
     }
 
+    // Bug 1 + 3 fix: keep LeaveBalance.pendingHours in sync.
+    // - Reverting PENDING_MANAGER → DRAFT releases the entire pending reservation
+    //   (it will be re-incremented when /submit is called again).
+    // - Editing within a state that already has pendingHours reserved (none of
+    //   the current paths do, but defensive) shifts by the delta.
+    const wasReverted = leave.status === LeaveStatus.PENDING_MANAGER && updateData.status === LeaveStatus.DRAFT;
+    const newTotalHours = (updateData.totalHours as number | undefined) ?? leave.totalHours;
+    const totalHoursDelta = newTotalHours - leave.totalHours;
+    if (leave.balanceId) {
+      if (wasReverted) {
+        // Reverting PENDING_MANAGER → DRAFT releases the entire pending reservation.
+        // It will be re-incremented when the user calls /submit again.
+        await prisma.leaveBalance.update({
+          where: { id: leave.balanceId },
+          data: { pendingHours: { decrement: leave.totalHours } },
+        });
+      } else if (
+        totalHoursDelta !== 0 &&
+        leave.status === LeaveStatus.PENDING_MANAGER
+      ) {
+        // Edit while still pending: shift pendingHours by delta. Only
+        // PENDING_MANAGER can hit this branch given the status guard above.
+        await prisma.leaveBalance.update({
+          where: { id: leave.balanceId },
+          data: { pendingHours: { increment: totalHoursDelta } },
+        });
+      }
+    }
+
     const updated = await prisma.leaveRequest.update({
       where: { id },
       data: updateData,

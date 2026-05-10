@@ -123,7 +123,7 @@ async function main() {
     }
     const isDirector = role === "ADMIN" || (role === "HEAD" && !adminRecord);
 
-    const updated = await prisma.employee.upsert({
+    const updated: { id: string } = await prisma.employee.upsert({
       where: { email: e.email },
       update: {
         name: e.name,

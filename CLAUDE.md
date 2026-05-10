@@ -3,7 +3,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **leave-tool** (1500 symbols, 2922 relationships, 126 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **leave_tool** (2169 symbols, 4606 relationships, 184 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -26,10 +26,10 @@ This project is indexed by GitNexus as **leave-tool** (1500 symbols, 2922 relati
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/leave-tool/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/leave-tool/clusters` | All functional areas |
-| `gitnexus://repo/leave-tool/processes` | All execution flows |
-| `gitnexus://repo/leave-tool/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/leave_tool/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/leave_tool/clusters` | All functional areas |
+| `gitnexus://repo/leave_tool/processes` | All execution flows |
+| `gitnexus://repo/leave_tool/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

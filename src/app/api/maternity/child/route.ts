@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
+import { createNotification } from "@/lib/notifications";
 import { Role } from "@/generated/prisma";
 
 export async function GET(request: NextRequest) {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     const employee = await prisma.employee.findUnique({
       where: { id: user.id },
-      select: { gender: true },
+      select: { gender: true, name: true, managerId: true },
     });
     if (!employee || employee.gender !== "FEMALE") {
       return Response.json(
@@ -84,6 +85,19 @@ export async function POST(request: NextRequest) {
         status: "PENDING",
       },
     });
+
+    // Notify the approving manager so it surfaces on /approvals or /maternity
+    if (employee.managerId) {
+      await createNotification(
+        employee.managerId,
+        "Khai báo con mới chờ duyệt",
+        `${employee.name} khai báo con sinh ngày ${bd.toISOString().slice(0, 10)}`,
+        `/maternity`,
+        "child",
+        created.id
+      );
+    }
+
     return Response.json(created, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";

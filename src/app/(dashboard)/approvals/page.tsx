@@ -69,8 +69,8 @@ export default function ApprovalsPage() {
         role === "HEAD" || role === "ADMIN" ? "PENDING_HEAD" : "PENDING_MANAGER";
 
       const [leavesRes, cancelsRes] = await Promise.all([
-        fetch(`/api/leaves?status=${status}&pending=true`),
-        fetch(`/api/leaves?status=CANCEL_PENDING&pending=true`),
+        fetch(`/api/leaves?status=${status}`),
+        fetch(`/api/leaves?status=CANCEL_PENDING`),
       ]);
 
       if (leavesRes.ok) setLeaves(await leavesRes.json());

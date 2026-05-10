@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, clearNotificationsForEntity } from "@/lib/notifications";
 import { logAudit, getRequestIp } from "@/lib/audit";
 import { Role } from "@/generated/prisma";
 
@@ -45,8 +45,9 @@ export async function POST(
       );
     }
 
-    await prisma.shiftChangeRequest.update({
-      where: { id },
+    // Bug 4 fix: atomic status guard
+    const guard = await prisma.shiftChangeRequest.updateMany({
+      where: { id, status: "PENDING" },
       data: {
         status: "REJECTED",
         approvedBy: user.id,
@@ -54,6 +55,15 @@ export async function POST(
         managerComment: comment || null,
       },
     });
+    if (guard.count === 0) {
+      return Response.json(
+        { error: "Request was already processed" },
+        { status: 409 }
+      );
+    }
+
+    // Bug 7 fix: clear approver-side notifications
+    await clearNotificationsForEntity("shift", id);
 
     await createNotification(
       req.employeeId,

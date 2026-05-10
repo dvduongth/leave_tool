@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import {
   createNotification,
   notifyLeaveEventFromRequest,
+  clearNotificationsForEntity,
 } from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { LeaveStatus, Role } from "@/generated/prisma";
@@ -59,7 +60,7 @@ export async function POST(
         },
       });
 
-      // Restore pending_hours if was PENDING_MANAGER
+      // Restore pending_hours if was PENDING_MANAGER (DRAFT never accrues pending)
       if (oldStatus === LeaveStatus.PENDING_MANAGER && leave.balanceId) {
         await prisma.leaveBalance.update({
           where: { id: leave.balanceId },
@@ -76,6 +77,10 @@ export async function POST(
           newValues: { status: LeaveStatus.CANCELLED },
         },
       });
+
+      // Bug 2 fix: drop any pending-approval notifications so the bell badge
+      // and approvals list stay consistent with the new CANCELLED state.
+      await clearNotificationsForEntity("leave", id);
 
       return Response.json(updated);
     }
@@ -118,7 +123,10 @@ export async function POST(
         },
       });
 
-      // Notify department head
+      // Bug 2 fix: drop pending-approval notifications now that the request is cancelled
+      await clearNotificationsForEntity("leave", id);
+
+      // Notify department head with an informational ping (no action required)
       const department = await prisma.department.findUnique({
         where: { id: leave.employee.departmentId },
         select: { headId: true },

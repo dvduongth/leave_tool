@@ -11,7 +11,9 @@ export async function createNotification(
   userId: string,
   title: string,
   message: string,
-  link?: string
+  link?: string,
+  entity?: string,
+  entityId?: string
 ): Promise<void> {
   await prisma.notification.create({
     data: {
@@ -19,8 +21,26 @@ export async function createNotification(
       title,
       message,
       link,
+      entity,
+      entityId,
     },
   });
+}
+
+/**
+ * Cleanup notifications referencing an entity that's no longer actionable
+ * (cancelled / rejected / deleted). Use after status transitions out of
+ * pending states. Removes both read and unread rows so the bell badge and
+ * approvals list stay consistent.
+ */
+export async function clearNotificationsForEntity(
+  entity: string,
+  entityId: string
+): Promise<number> {
+  const result = await prisma.notification.deleteMany({
+    where: { entity, entityId },
+  });
+  return result.count;
 }
 
 /**
@@ -32,9 +52,16 @@ export async function notifyLeaveEvent(
   userId: string,
   event: EmailEvent,
   ctx: Omit<LeaveEmailCtx, "recipientName">,
-  inApp: { title: string; message: string; link?: string }
+  inApp: { title: string; message: string; link?: string; entity?: string; entityId?: string }
 ): Promise<void> {
-  await createNotification(userId, inApp.title, inApp.message, inApp.link);
+  await createNotification(
+    userId,
+    inApp.title,
+    inApp.message,
+    inApp.link,
+    inApp.entity,
+    inApp.entityId
+  );
 
   try {
     const user = await prisma.employee.findUnique({
@@ -85,6 +112,8 @@ export async function notifyLeaveEventFromRequest(
   inApp: { title: string; message: string; link?: string },
   comment?: string | null
 ): Promise<void> {
+  // Auto-tag entity for cleanup. Detect from link since callers all use /leaves/{id}.
+  const entityId = inApp.link?.match(/^\/leaves\/([^/?#]+)/)?.[1] ?? leave.id;
   await notifyLeaveEvent(
     userId,
     event,
@@ -97,6 +126,6 @@ export async function notifyLeaveEventFromRequest(
       comment: comment ?? null,
       leaveId: leave.id,
     },
-    inApp
+    { ...inApp, entity: "leave", entityId }
   );
 }

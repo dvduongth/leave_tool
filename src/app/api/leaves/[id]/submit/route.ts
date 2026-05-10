@@ -84,7 +84,8 @@ export async function POST(
       },
     });
 
-    // Notify the approver
+    // Notify the approver. entity/entityId let later cancel/reject paths
+    // delete this notification cleanly so badges and approval lists stay synced.
     const approverInApp = {
       title: "New leave request pending approval",
       message: `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,

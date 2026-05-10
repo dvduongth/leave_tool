@@ -1,5 +1,8 @@
 import { getCurrentUser } from "@/lib/auth-utils";
-import { notifyLeaveEventFromRequest } from "@/lib/notifications";
+import {
+  notifyLeaveEventFromRequest,
+  clearNotificationsForEntity,
+} from "@/lib/notifications";
 import prisma from "@/lib/prisma";
 import { ApprovalAction, LeaveStatus, Role } from "@/generated/prisma";
 
@@ -93,6 +96,10 @@ export async function POST(
         },
       });
 
+      // Bug 5 fix: drop the approver-side pending notification so badges/lists
+      // stay in sync with the new REJECTED state.
+      await clearNotificationsForEntity("leave", id);
+
       // Notify employee
       await notifyLeaveEventFromRequest(
         leave.employeeId,
@@ -160,6 +167,10 @@ export async function POST(
           },
         },
       });
+
+      // Bug 5 fix: drop the approver-side pending notification so badges/lists
+      // stay in sync with the new REJECTED state.
+      await clearNotificationsForEntity("leave", id);
 
       // Notify employee
       await notifyLeaveEventFromRequest(

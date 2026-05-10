@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, clearNotificationsForEntity } from "@/lib/notifications";
 import { accrueOTBank } from "@/lib/ot-bank";
 import { Role } from "@/generated/prisma";
 
@@ -53,14 +53,24 @@ export async function POST(
       );
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      const u = await tx.oTRecord.update({
-        where: { id },
-        data: { status: "APPROVED" },
-      });
-      await accrueOTBank(tx, id, record.employeeId, record.date, record.otMinutes);
-      return u;
+    // Bug 4 fix: atomic status guard so concurrent approve+reject can't both win.
+    const guard = await prisma.oTRecord.updateMany({
+      where: { id, status: "PENDING" },
+      data: { status: "APPROVED" },
     });
+    if (guard.count === 0) {
+      return Response.json(
+        { error: "OT record was already processed" },
+        { status: 409 }
+      );
+    }
+    const updated = await prisma.$transaction(async (tx) => {
+      await accrueOTBank(tx, id, record.employeeId, record.date, record.otMinutes);
+      return tx.oTRecord.findUniqueOrThrow({ where: { id } });
+    });
+
+    // Bug 7 fix: clear approver-side pending notifications now that it's APPROVED
+    await clearNotificationsForEntity("ot", id);
 
     await createNotification(
       record.employeeId,

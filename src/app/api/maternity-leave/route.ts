@@ -137,7 +137,9 @@ export async function POST(request: NextRequest) {
         employee.managerId,
         "Đăng ký nghỉ thai sản",
         `${employee.name} đã đăng ký nghỉ thai sản (${mode === "EARLY_LEAVE" ? "về sớm" : "đi muộn"} 1 tiếng) ngày ${dayDate.toISOString().slice(0, 10)}`,
-        `/maternity`
+        `/maternity`,
+        "maternity",
+        created.id
       );
     }
 

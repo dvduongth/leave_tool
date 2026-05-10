@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, clearNotificationsForEntity } from "@/lib/notifications";
 import { logAudit, getRequestIp } from "@/lib/audit";
 import { Role } from "@/generated/prisma";
 
@@ -31,10 +31,20 @@ export async function POST(
       return Response.json({ error: "You cannot approve this declaration" }, { status: 403 });
     }
 
-    await prisma.employeeChild.update({
-      where: { id },
+    // Bug 4 fix: atomic guard
+    const guard = await prisma.employeeChild.updateMany({
+      where: { id, status: "PENDING" },
       data: { status: "APPROVED", approvedBy: user.id, approvedAt: new Date() },
     });
+    if (guard.count === 0) {
+      return Response.json(
+        { error: "Declaration was already processed" },
+        { status: 409 }
+      );
+    }
+
+    // Bug 7 fix: clear approver-side notifications
+    await clearNotificationsForEntity("child", id);
 
     await createNotification(
       child.employeeId,

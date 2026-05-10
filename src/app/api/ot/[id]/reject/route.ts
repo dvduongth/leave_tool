@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, clearNotificationsForEntity } from "@/lib/notifications";
 import { Role } from "@/generated/prisma";
 
 export async function POST(
@@ -54,10 +54,21 @@ export async function POST(
       );
     }
 
-    const updated = await prisma.oTRecord.update({
-      where: { id },
+    // Bug 4 fix: atomic status guard
+    const guard = await prisma.oTRecord.updateMany({
+      where: { id, status: "PENDING" },
       data: { status: "REJECTED" },
     });
+    if (guard.count === 0) {
+      return Response.json(
+        { error: "OT record was already processed" },
+        { status: 409 }
+      );
+    }
+    const updated = await prisma.oTRecord.findUniqueOrThrow({ where: { id } });
+
+    // Bug 7 fix: clear approver-side pending notifications
+    await clearNotificationsForEntity("ot", id);
 
     await createNotification(
       record.employeeId,

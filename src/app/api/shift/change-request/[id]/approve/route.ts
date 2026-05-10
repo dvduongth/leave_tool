@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
-import { createNotification } from "@/lib/notifications";
+import { createNotification, clearNotificationsForEntity } from "@/lib/notifications";
 import { logAudit, getRequestIp } from "@/lib/audit";
 import { Role, ShiftType } from "@/generated/prisma";
 
@@ -46,6 +46,18 @@ export async function POST(
     const weeklyShifts = req.weeklyShifts as Record<string, ShiftType>;
     const effectiveDate = req.effectiveDate;
 
+    // Bug 4 fix: atomic status guard
+    const guard = await prisma.shiftChangeRequest.updateMany({
+      where: { id, status: "PENDING" },
+      data: { status: "APPROVED", approvedBy: user.id, approvedAt: new Date() },
+    });
+    if (guard.count === 0) {
+      return Response.json(
+        { error: "Request was already processed" },
+        { status: 409 }
+      );
+    }
+
     await prisma.$transaction(async (tx) => {
       // Close existing active rows for each dayOfWeek (set endDate = effectiveDate - 1 day)
       const closeDate = new Date(effectiveDate);
@@ -82,15 +94,11 @@ export async function POST(
         });
       }
 
-      await tx.shiftChangeRequest.update({
-        where: { id },
-        data: {
-          status: "APPROVED",
-          approvedBy: user.id,
-          approvedAt: new Date(),
-        },
-      });
+      // Status already updated atomically above via the guard.
     });
+
+    // Bug 7 fix: clear approver-side pending notifications
+    await clearNotificationsForEntity("shift", id);
 
     await createNotification(
       req.employeeId,

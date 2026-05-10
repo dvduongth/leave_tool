@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
+import { createNotification } from "@/lib/notifications";
 import { Role, ShiftType } from "@/generated/prisma";
 
 const VALID_SHIFTS: ShiftType[] = ["A", "B", "C"];
@@ -116,6 +117,22 @@ export async function POST(request: NextRequest) {
         status: "PENDING",
       },
     });
+
+    // Notify the approving manager
+    const employee = await prisma.employee.findUnique({
+      where: { id: user.id },
+      select: { name: true, managerId: true },
+    });
+    if (employee?.managerId) {
+      await createNotification(
+        employee.managerId,
+        "Yêu cầu đổi ca mới",
+        `${employee.name} đăng ký đổi ca làm hiệu lực từ ${eff.toISOString().slice(0, 10)}`,
+        `/shift`,
+        "shift",
+        created.id
+      );
+    }
 
     return Response.json(created, { status: 201 });
   } catch (err) {
