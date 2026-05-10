@@ -130,7 +130,7 @@ model LeaveBalance {
   pendingHours  Float    @default(0) @map("pending_hours")
   graceDeadline DateTime @map("grace_deadline") @db.Date
 
-  employee      Employee       @relation(fields: [employeeId], references: [id])
+  employee      Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveRequests LeaveRequest[]
 
   @@unique([employeeId, cycleYear])
@@ -160,7 +160,7 @@ model LeaveRequest {
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  employee       Employee              @relation(fields: [employeeId], references: [id])
+  employee       Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   balance        LeaveBalance?         @relation(fields: [balanceId], references: [id])
   history        LeaveRequestHistory[]
   otConsumptions LeaveOTConsumption[]
@@ -179,8 +179,8 @@ model LeaveRequestHistory {
   newValues Json?    @map("new_values")
   createdAt DateTime @default(now()) @map("created_at")
 
-  request LeaveRequest @relation(fields: [requestId], references: [id])
-  actor   Employee     @relation("HistoryActor", fields: [actorId], references: [id])
+  request LeaveRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   Employee     @relation("HistoryActor", fields: [actorId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
   @@map("leave_request_history")
@@ -198,7 +198,7 @@ model OTRecord {
   otBalanceId String?      @map("ot_balance_id")
   createdAt   DateTime     @default(now()) @map("created_at")
 
-  employee  Employee   @relation(fields: [employeeId], references: [id])
+  employee  Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   otBalance OTBalance? @relation(fields: [otBalanceId], references: [id])
 
   @@index([employeeId, date])
@@ -252,8 +252,8 @@ model FlexTimeRecord {
   approvedBy String?      @map("approved_by")
   createdAt  DateTime     @default(now()) @map("created_at")
 
-  employee Employee  @relation(fields: [employeeId], references: [id])
-  approver Employee? @relation("FlexApprover", fields: [approvedBy], references: [id])
+  employee Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approver Employee? @relation("FlexApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
 
   @@index([employeeId, date])
   @@map("flex_time_records")
@@ -270,7 +270,7 @@ model FlexTimeMonthlySummary {
   status          FlexMonthStatus @default(OPEN)
   settledAt       DateTime?       @map("settled_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, yearMonth])
   @@map("flex_time_monthly_summaries")
@@ -295,7 +295,7 @@ model MenstrualLeave {
   note       String?
   createdAt  DateTime @default(now()) @map("created_at")
 
-  employee Employee @relation(fields: [employeeId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, date])
   @@index([employeeId, date])
@@ -398,7 +398,7 @@ model Notification {
   link      String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user Employee @relation(fields: [userId], references: [id])
+  user Employee @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
   @@map("notifications")
