@@ -217,7 +217,7 @@ model OTBalance {
   pendingMinutes Int      @default(0) @map("pending_minutes")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  employee     Employee             @relation(fields: [employeeId], references: [id])
+  employee     Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   otRecords    OTRecord[]
   consumptions LeaveOTConsumption[]
 
@@ -234,7 +234,7 @@ model LeaveOTConsumption {
   createdAt      DateTime @default(now()) @map("created_at")
 
   leaveRequest LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
-  otBalance    OTBalance    @relation(fields: [otBalanceId], references: [id])
+  otBalance    OTBalance    @relation(fields: [otBalanceId], references: [id], onDelete: Cascade)
 
   @@index([leaveRequestId])
   @@index([otBalanceId])
@@ -330,8 +330,8 @@ model ShiftChangeRequest {
   managerComment String?      @map("manager_comment")
   createdAt      DateTime     @default(now()) @map("created_at")
 
-  employee Employee  @relation(fields: [employeeId], references: [id])
-  approver Employee? @relation("ShiftApprover", fields: [approvedBy], references: [id])
+  employee Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approver Employee? @relation("ShiftApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
 
   @@index([employeeId, status])
   @@map("shift_change_requests")
@@ -348,8 +348,8 @@ model EmployeeChild {
   note       String?
   createdAt  DateTime     @default(now()) @map("created_at")
 
-  employee        Employee         @relation(fields: [employeeId], references: [id])
-  approver        Employee?        @relation("ChildApprover", fields: [approvedBy], references: [id])
+  employee        Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approver        Employee?        @relation("ChildApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
   maternityLeaves MaternityLeave[]
 
   @@index([employeeId, birthDate])
@@ -370,9 +370,9 @@ model MaternityLeave {
   approvedAt DateTime?     @map("approved_at")
   createdAt  DateTime      @default(now()) @map("created_at")
 
-  employee Employee      @relation(fields: [employeeId], references: [id])
-  child    EmployeeChild @relation(fields: [childId], references: [id])
-  approver Employee?     @relation("MaternityApprover", fields: [approvedBy], references: [id])
+  employee Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  child    EmployeeChild @relation(fields: [childId], references: [id], onDelete: Cascade)
+  approver Employee?     @relation("MaternityApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
 
   @@unique([employeeId, date])
   @@index([employeeId, date])
@@ -414,7 +414,7 @@ model AuditLog {
   ipAddress String?  @map("ip_address")
   createdAt DateTime @default(now()) @map("created_at")
 
-  user Employee? @relation(fields: [userId], references: [id])
+  user Employee? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([action, createdAt])
