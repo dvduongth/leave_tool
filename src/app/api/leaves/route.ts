@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/auth-utils";
+import { EMPLOYEE_REMOVED, getCurrentUser, requireValidEmployee } from "@/lib/auth-utils";
 import { getActiveBalance } from "@/lib/leave-calculator";
 import { calculateHoursFromRange } from "@/lib/working-hours";
 import prisma from "@/lib/prisma";
@@ -97,10 +97,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const user = await requireValidEmployee();
 
     const body = await request.json();
     const { startDate, startTime, endDate: endDateInput, endTime: endTimeInput, reason } = body;
@@ -222,6 +219,15 @@ export async function POST(request: Request) {
     return Response.json(leave, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";
+    if (message === "Unauthorized") {
+      return Response.json({ error: message }, { status: 401 });
+    }
+    if (message === EMPLOYEE_REMOVED) {
+      return Response.json(
+        { error: "Tài khoản không còn tồn tại. Vui lòng đăng nhập lại.", code: EMPLOYEE_REMOVED, forceLogout: true },
+        { status: 401 }
+      );
+    }
     if (message.includes("No active leave balance")) {
       return Response.json({ error: message }, { status: 404 });
     }

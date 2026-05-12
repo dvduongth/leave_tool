@@ -31,6 +31,10 @@ export default async function DashboardLayout({
     where: { id: user.id },
     select: { mustChangePassword: true },
   });
+  // Orphan JWT: employee row was removed (e.g. xlsx sync). Force re-auth.
+  if (!flags) {
+    redirect("/login?reason=removed");
+  }
   if (flags?.mustChangePassword) {
     const h = await headers();
     const path = h.get("x-pathname") || h.get("next-url") || "";

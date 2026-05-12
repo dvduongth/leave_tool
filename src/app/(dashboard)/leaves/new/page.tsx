@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { format } from "date-fns";
 import { CalendarIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -105,6 +106,10 @@ export default function NewLeavePage() {
           setPreviewError(null);
         } else {
           setPreview(null);
+          if (r.status === 401 && data?.code === "EmployeeRemoved") {
+            void signOut({ callbackUrl: "/login?reason=removed" });
+            return;
+          }
           setPreviewError(data?.error ?? null);
         }
       })
@@ -140,6 +145,11 @@ export default function NewLeavePage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 401 && err.code === "EmployeeRemoved") {
+          toast.error(err.error);
+          await signOut({ callbackUrl: "/login?reason=removed" });
+          return;
+        }
         toast.error(err.error || t("newLeave.errCreate"));
         return;
       }

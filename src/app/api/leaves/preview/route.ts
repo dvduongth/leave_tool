@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth-utils";
+import { EMPLOYEE_REMOVED, requireValidEmployee } from "@/lib/auth-utils";
 import { calculateHoursFromRange } from "@/lib/working-hours";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const user = await requireValidEmployee();
     const { searchParams } = request.nextUrl;
     const startDate = searchParams.get("startDate");
     const startTime = searchParams.get("startTime");
@@ -61,6 +61,12 @@ export async function GET(request: NextRequest) {
     const message = err instanceof Error ? err.message : "Internal error";
     if (message === "Unauthorized") {
       return Response.json({ error: message }, { status: 401 });
+    }
+    if (message === EMPLOYEE_REMOVED) {
+      return Response.json(
+        { error: "Tài khoản không còn tồn tại. Vui lòng đăng nhập lại.", code: EMPLOYEE_REMOVED, forceLogout: true },
+        { status: 401 }
+      );
     }
     return Response.json({ error: message }, { status: 500 });
   }
