@@ -174,7 +174,7 @@ export default function LeaveDetailPage() {
           startTime: editStartTime,
           endDate: editEndDate?.toISOString(),
           endTime: editEndTime,
-          reason: editReason || undefined,
+          reason: editReason.trim() || undefined,
         }),
       });
       if (!res.ok) {
@@ -254,7 +254,7 @@ export default function LeaveDetailPage() {
           startTime: editStartTime,
           endDate: editEndDate?.toISOString(),
           endTime: editEndTime,
-          reason: editReason || undefined,
+          reason: editReason.trim() || undefined,
         }),
       });
       if (!res.ok) {

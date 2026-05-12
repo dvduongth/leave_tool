@@ -112,6 +112,10 @@ export default function WellnessPage() {
       toast.error(t("common.unexpectedError"));
       return;
     }
+    if (!formNote.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
     setSubmitting(true);
     try {
       const dateStr = `${formDate.getFullYear()}-${String(
@@ -125,7 +129,7 @@ export default function WellnessPage() {
           date: dateStr,
           startTime: formStart,
           endTime,
-          note: formNote || null,
+          note: formNote.trim(),
         }),
       });
       if (res.ok) {
@@ -349,15 +353,13 @@ export default function WellnessPage() {
               </div>
               <div className="space-y-2">
                 <Label>
-                  {t("wellness.fieldNote")}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    {t("common.optional")}
-                  </span>
+                  {t("wellness.fieldNote")} <span className="text-destructive">*</span>
                 </Label>
                 <Textarea
                   value={formNote}
                   onChange={(e) => setFormNote(e.target.value)}
                   rows={2}
+                  required
                 />
               </div>
             </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus, CalendarIcon, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,6 +155,10 @@ export default function OTPage() {
       toast.error(t("ot.errTimesRequired"));
       return;
     }
+    if (!formNote.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
     setSubmitting(true);
     try {
       // Send date as YYYY-MM-DD to avoid timezone shift
@@ -166,7 +170,7 @@ export default function OTPage() {
           date: dateStr,
           otStart: formStart,
           otEnd: formEnd,
-          note: formNote || null,
+          note: formNote.trim(),
         }),
       });
       if (res.ok) {
@@ -185,6 +189,22 @@ export default function OTPage() {
       toast.error(t("common.unexpectedError"));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleCancelOwn(recordId: string) {
+    if (!confirm("Bạn có chắc muốn huỷ yêu cầu OT này?")) return;
+    try {
+      const res = await fetch(`/api/ot/${recordId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã huỷ yêu cầu");
+        fetchRecords();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Không huỷ được");
+      }
+    } catch {
+      toast.error(t("common.unexpectedError"));
     }
   }
 
@@ -307,13 +327,14 @@ export default function OTPage() {
                   </TableHead>
                   <TableHead>{t("ot.colStatus")}</TableHead>
                   <TableHead>{t("ot.colNote")}</TableHead>
+                  <TableHead className="w-[60px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("common.loading")}
@@ -322,7 +343,7 @@ export default function OTPage() {
                 ) : myRecords.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("ot.empty")}
@@ -346,6 +367,18 @@ export default function OTPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-[200px] truncate">
                         {record.note || "-"}
+                      </TableCell>
+                      <TableCell>
+                        {record.status === "PENDING" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleCancelOwn(record.id)}
+                            title="Huỷ yêu cầu"
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -484,13 +517,16 @@ export default function OTPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ot-note">{t("ot.noteOptional")}</Label>
+              <Label htmlFor="ot-note">
+                {t("ot.noteOptional")} <span className="text-destructive">*</span>
+              </Label>
               <Textarea
                 id="ot-note"
                 value={formNote}
                 onChange={(e) => setFormNote(e.target.value)}
                 placeholder={t("ot.notePlaceholder")}
                 rows={3}
+                required
               />
             </div>
             <DialogFooter>

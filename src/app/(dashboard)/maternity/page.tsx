@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, CheckCircle, XCircle, Baby } from "lucide-react";
+import { Plus, CalendarIcon, CheckCircle, XCircle, Baby, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -120,13 +120,17 @@ export default function MaternityPage() {
       toast.error("Cần chọn ngày sinh con");
       return;
     }
+    if (!childNote.trim()) {
+      toast.error("Vui lòng nhập ghi chú");
+      return;
+    }
     setSubmitting(true);
     try {
       const dateStr = `${childBirth.getFullYear()}-${String(childBirth.getMonth() + 1).padStart(2, "0")}-${String(childBirth.getDate()).padStart(2, "0")}`;
       const res = await fetch("/api/maternity/child", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ birthDate: dateStr, name: childName || null, note: childNote || null }),
+        body: JSON.stringify({ birthDate: dateStr, name: childName || null, note: childNote.trim() }),
       });
       if (res.ok) {
         toast.success("Đã gửi khai báo con");
@@ -149,6 +153,10 @@ export default function MaternityPage() {
       toast.error("Cần chọn ngày");
       return;
     }
+    if (!leaveNote.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
     setSubmitting(true);
     try {
       const dateStr = `${leaveDate.getFullYear()}-${String(leaveDate.getMonth() + 1).padStart(2, "0")}-${String(leaveDate.getDate()).padStart(2, "0")}`;
@@ -160,7 +168,7 @@ export default function MaternityPage() {
           mode: leaveMode,
           startTime: leaveStart,
           endTime: leaveEnd,
-          note: leaveNote || null,
+          note: leaveNote.trim(),
         }),
       });
       if (res.ok) {
@@ -205,6 +213,30 @@ export default function MaternityPage() {
     } else {
       const d = await res.json();
       toast.error(d.error || "Thất bại");
+    }
+  }
+
+  async function cancelChild(id: string) {
+    if (!confirm("Bạn có chắc muốn huỷ khai báo này?")) return;
+    const res = await fetch(`/api/maternity/child/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Đã huỷ khai báo");
+      fetchAll();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      toast.error(d.error || "Không huỷ được");
+    }
+  }
+
+  async function cancelLeave(id: string) {
+    if (!confirm("Bạn có chắc muốn huỷ đăng ký này?")) return;
+    const res = await fetch(`/api/maternity-leave/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Đã huỷ đăng ký");
+      fetchAll();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      toast.error(d.error || "Không huỷ được");
     }
   }
 
@@ -263,6 +295,7 @@ export default function MaternityPage() {
                     <TableHead>Tên con</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Ghi chú</TableHead>
+                    <TableHead className="w-[60px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -275,6 +308,13 @@ export default function MaternityPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs max-w-[300px] truncate">
                         {c.note || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {c.status === "PENDING" && (
+                          <Button size="icon" variant="ghost" onClick={() => cancelChild(c.id)} title="Huỷ">
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -314,6 +354,7 @@ export default function MaternityPage() {
                       <TableHead>Thời gian</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead>Ghi chú</TableHead>
+                      <TableHead className="w-[60px]" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -327,6 +368,13 @@ export default function MaternityPage() {
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs max-w-[200px] truncate">
                           {l.note || "—"}
+                        </TableCell>
+                        <TableCell>
+                          {l.status === "PENDING" && (
+                            <Button size="icon" variant="ghost" onClick={() => cancelLeave(l.id)} title="Huỷ">
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -462,8 +510,8 @@ export default function MaternityPage() {
               <Input value={childName} onChange={(e) => setChildName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Ghi chú</Label>
-              <Textarea value={childNote} onChange={(e) => setChildNote(e.target.value)} rows={2} />
+              <Label>Ghi chú <span className="text-destructive">*</span></Label>
+              <Textarea value={childNote} onChange={(e) => setChildNote(e.target.value)} rows={2} required />
             </div>
           </div>
           <DialogFooter>
@@ -516,8 +564,8 @@ export default function MaternityPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Ghi chú</Label>
-              <Textarea value={leaveNote} onChange={(e) => setLeaveNote(e.target.value)} rows={2} />
+              <Label>Ghi chú <span className="text-destructive">*</span></Label>
+              <Textarea value={leaveNote} onChange={(e) => setLeaveNote(e.target.value)} rows={2} required />
             </div>
           </div>
           <DialogFooter>

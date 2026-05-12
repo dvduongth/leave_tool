@@ -128,6 +128,10 @@ export default function NewLeavePage() {
       toast.error(t("newLeave.errInvalid"));
       return;
     }
+    if (!reason.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -139,7 +143,7 @@ export default function NewLeavePage() {
           startTime,
           endDate: endDate.toISOString(),
           endTime,
-          reason: reason || undefined,
+          reason: reason.trim(),
         }),
       });
 
@@ -336,13 +340,14 @@ export default function NewLeavePage() {
           {/* Reason */}
           <div className="space-y-2">
             <Label>
-              {t("newLeave.reason")} <span className="text-muted-foreground">{t("common.optional")}</span>
+              {t("newLeave.reason")} <span className="text-destructive">*</span>
             </Label>
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={t("newLeave.reasonPlaceholder")}
               rows={3}
+              required
             />
           </div>
 

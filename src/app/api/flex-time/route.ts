@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
+import { createNotification } from "@/lib/notifications";
 import { Role } from "@/generated/prisma";
 
 export async function GET(request: NextRequest) {
@@ -104,6 +105,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const reasonTrimmed = typeof reason === "string" ? reason.trim() : "";
+    if (!reasonTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
+
     // If MAKEUP: validate there's at least one DEFICIT in the same month
     if (type === "MAKEUP") {
       const yearMonth = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, "0")}`;
@@ -143,10 +149,37 @@ export async function POST(request: NextRequest) {
         type,
         date: parsedDate,
         minutes,
-        reason: reason || null,
+        reason: reasonTrimmed,
         status: "PENDING",
       },
     });
+
+    // Notify the approver(s): direct manager first, fall back to dept HEAD.
+    const employee = await prisma.employee.findUnique({
+      where: { id: user.id },
+      select: { name: true, managerId: true, departmentId: true },
+    });
+    const dept = employee?.departmentId
+      ? await prisma.department.findUnique({
+          where: { id: employee.departmentId },
+          select: { headId: true },
+        })
+      : null;
+    const recipients = new Set<string>();
+    if (employee?.managerId) recipients.add(employee.managerId);
+    else if (dept?.headId && dept.headId !== user.id) recipients.add(dept.headId);
+    const dateStr = parsedDate.toISOString().slice(0, 10);
+    const kindLabel = type === "DEFICIT" ? "ghi nhận thiếu giờ" : "ghi nhận bù giờ";
+    for (const r of recipients) {
+      await createNotification(
+        r,
+        "Yêu cầu Flex Time mới",
+        `${employee?.name ?? "Nhân viên"} ${kindLabel} ngày ${dateStr} (${minutes} phút)`,
+        `/flex-time`,
+        "flex-time",
+        record.id
+      );
+    }
 
     return Response.json(record, { status: 201 });
   } catch (error: unknown) {

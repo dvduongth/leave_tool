@@ -112,9 +112,13 @@ export async function PATCH(
     }
 
     if (reason !== undefined && reason !== leave.reason) {
+      const reasonTrimmed = typeof reason === "string" ? reason.trim() : "";
+      if (!reasonTrimmed) {
+        return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+      }
       oldValues.reason = leave.reason;
-      newValues.reason = reason;
-      updateData.reason = reason;
+      newValues.reason = reasonTrimmed;
+      updateData.reason = reasonTrimmed;
     }
 
     const newStartDate = startDate ? new Date(startDate) : leave.startDate;

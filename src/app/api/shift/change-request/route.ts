@@ -97,6 +97,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const reasonTrimmed = typeof reason === "string" ? reason.trim() : "";
+    if (!reasonTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
+
     // No overlap pending: reject if employee already has PENDING
     const existingPending = await prisma.shiftChangeRequest.findFirst({
       where: { employeeId: user.id, status: "PENDING" },
@@ -113,7 +118,7 @@ export async function POST(request: NextRequest) {
         employeeId: user.id,
         effectiveDate: eff,
         weeklyShifts: valid as never,
-        reason: reason || null,
+        reason: reasonTrimmed,
         status: "PENDING",
       },
     });

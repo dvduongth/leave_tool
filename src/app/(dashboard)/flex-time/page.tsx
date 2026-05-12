@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, CheckCircle, XCircle } from "lucide-react";
+import { Plus, CalendarIcon, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,6 +154,10 @@ export default function FlexTimePage() {
       toast.error(t("flex.errPositive"));
       return;
     }
+    if (!formReason.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/flex-time", {
@@ -163,7 +167,7 @@ export default function FlexTimePage() {
           type: dialogType,
           date: formDate.toISOString(),
           minutes,
-          reason: formReason || null,
+          reason: formReason.trim(),
         }),
       });
       if (res.ok) {
@@ -202,6 +206,22 @@ export default function FlexTimePage() {
       } else {
         const data = await res.json();
         toast.error(data.error || t("flex.errApprove"));
+      }
+    } catch {
+      toast.error(t("common.unexpectedError"));
+    }
+  }
+
+  async function handleCancelOwn(recordId: string) {
+    if (!confirm("Bạn có chắc muốn huỷ yêu cầu Flex Time này?")) return;
+    try {
+      const res = await fetch(`/api/flex-time/${recordId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã huỷ yêu cầu");
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Không huỷ được");
       }
     } catch {
       toast.error(t("common.unexpectedError"));
@@ -298,13 +318,14 @@ export default function FlexTimePage() {
                   <TableHead className="text-right">{t("flex.colMinutes")}</TableHead>
                   <TableHead>{t("flex.colReason")}</TableHead>
                   <TableHead>{t("flex.colStatus")}</TableHead>
+                  <TableHead className="w-[60px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("common.loading")}
@@ -313,7 +334,7 @@ export default function FlexTimePage() {
                 ) : deficitRecords.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("flex.emptyDeficit")}
@@ -334,6 +355,18 @@ export default function FlexTimePage() {
                           {t(`common.status.${r.status}`)}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {r.status === "PENDING" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleCancelOwn(r.id)}
+                            title="Huỷ yêu cầu"
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -351,13 +384,14 @@ export default function FlexTimePage() {
                   <TableHead className="text-right">{t("flex.colMinutes")}</TableHead>
                   <TableHead>{t("flex.colReason")}</TableHead>
                   <TableHead>{t("flex.colStatus")}</TableHead>
+                  <TableHead className="w-[60px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("common.loading")}
@@ -366,7 +400,7 @@ export default function FlexTimePage() {
                 ) : makeupRecords.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("flex.emptyMakeup")}
@@ -386,6 +420,18 @@ export default function FlexTimePage() {
                         <Badge variant={getStatusVariant(r.status)}>
                           {t(`common.status.${r.status}`)}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {r.status === "PENDING" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleCancelOwn(r.id)}
+                            title="Huỷ yêu cầu"
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -526,18 +572,19 @@ export default function FlexTimePage() {
                 required
               />
             </div>
-            {dialogType === "DEFICIT" && (
-              <div className="space-y-2">
-                <Label htmlFor="flex-reason">{t("flex.reason")}</Label>
-                <Textarea
-                  id="flex-reason"
-                  value={formReason}
-                  onChange={(e) => setFormReason(e.target.value)}
-                  placeholder={t("flex.reasonPlaceholder")}
-                  rows={3}
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="flex-reason">
+                {t("flex.reason")} <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="flex-reason"
+                value={formReason}
+                onChange={(e) => setFormReason(e.target.value)}
+                placeholder={t("flex.reasonPlaceholder")}
+                rows={3}
+                required
+              />
+            </div>
             <DialogFooter>
               <Button type="submit" disabled={submitting}>
                 {submitting ? t("common.saving") : t("common.submit")}

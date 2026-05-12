@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { CalendarIcon, CheckCircle, XCircle, Plus } from "lucide-react";
+import { CalendarIcon, CheckCircle, XCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,6 +125,10 @@ export default function ShiftPage() {
       toast.error("Cần chọn ngày hiệu lực");
       return;
     }
+    if (!formReason.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
     setSubmitting(true);
     try {
       const dateStr = `${formEffective.getFullYear()}-${String(formEffective.getMonth() + 1).padStart(2, "0")}-${String(formEffective.getDate()).padStart(2, "0")}`;
@@ -134,7 +138,7 @@ export default function ShiftPage() {
         body: JSON.stringify({
           effectiveDate: dateStr,
           weeklyShifts: formShifts,
-          reason: formReason || null,
+          reason: formReason.trim(),
         }),
       });
       if (res.ok) {
@@ -165,6 +169,22 @@ export default function ShiftPage() {
       } else {
         const data = await res.json();
         toast.error(data.error || "Thao tác thất bại");
+      }
+    } catch {
+      toast.error("Lỗi không mong muốn");
+    }
+  }
+
+  async function handleCancelOwn(reqId: string) {
+    if (!confirm("Bạn có chắc muốn huỷ yêu cầu đổi ca này?")) return;
+    try {
+      const res = await fetch(`/api/shift/change-request/${reqId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã huỷ yêu cầu");
+        fetchAll();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Không huỷ được");
       }
     } catch {
       toast.error("Lỗi không mong muốn");
@@ -238,18 +258,19 @@ export default function ShiftPage() {
                   <TableHead>Lý do</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Ngày tạo</TableHead>
+                  <TableHead className="w-[60px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       Đang tải...
                     </TableCell>
                   </TableRow>
                 ) : myRequests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       Chưa có yêu cầu nào
                     </TableCell>
                   </TableRow>
@@ -270,6 +291,13 @@ export default function ShiftPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {format(new Date(r.createdAt), "MMM d, yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        {r.status === "PENDING" && (
+                          <Button size="icon" variant="ghost" onClick={() => handleCancelOwn(r.id)} title="Huỷ">
+                            <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -399,12 +427,13 @@ export default function ShiftPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Lý do (tuỳ chọn)</Label>
+              <Label>Lý do <span className="text-destructive">*</span></Label>
               <Textarea
                 value={formReason}
                 onChange={(e) => setFormReason(e.target.value)}
                 placeholder="Lý do đổi ca..."
                 rows={3}
+                required
               />
             </div>
           </div>

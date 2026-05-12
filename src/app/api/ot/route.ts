@@ -83,6 +83,11 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Invalid date" }, { status: 400 });
     }
 
+    const noteTrimmed = typeof note === "string" ? note.trim() : "";
+    if (!noteTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
+
     const otMinutes = calculateOTMinutes(otStart, otEnd);
 
     const record = await prisma.oTRecord.create({
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
         otStart,
         otEnd,
         otMinutes,
-        note: note || null,
+        note: noteTrimmed,
         status: "PENDING",
       },
     });

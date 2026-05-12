@@ -87,6 +87,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const noteTrimmed = typeof note === "string" ? note.trim() : "";
+    if (!noteTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
 
     // Only FEMALE employees may submit
     const employee = await prisma.employee.findUnique({
@@ -146,7 +150,7 @@ export async function POST(request: NextRequest) {
         date: parsedDate,
         startTime,
         endTime,
-        note: note || null,
+        note: noteTrimmed,
       },
     });
 

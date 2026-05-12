@@ -109,6 +109,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const reasonTrimmed = typeof reason === "string" ? reason.trim() : "";
+    if (!reasonTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
+
     const tre = /^\d{2}:\d{2}$/;
     if (!tre.test(startTime) || !tre.test(endTimeInput)) {
       return Response.json(
@@ -191,7 +196,7 @@ export async function POST(request: Request) {
         endDate,
         endTime,
         totalHours,
-        reason: reason || null,
+        reason: reasonTrimmed,
         status: LeaveStatus.DRAFT,
       },
       include: {
@@ -211,7 +216,7 @@ export async function POST(request: Request) {
           endDate: endDate.toISOString(),
           endTime,
           totalHours,
-          reason: reason || null,
+          reason: reasonTrimmed,
         },
       },
     });

@@ -78,6 +78,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const noteTrimmed = typeof note === "string" ? note.trim() : "";
+    if (!noteTrimmed) {
+      return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
+    }
     if (mode !== "EARLY_LEAVE" && mode !== "LATE_ARRIVAL") {
       return Response.json({ error: "mode must be EARLY_LEAVE or LATE_ARRIVAL" }, { status: 400 });
     }
@@ -127,7 +131,7 @@ export async function POST(request: NextRequest) {
         mode,
         startTime,
         endTime,
-        note: note || null,
+        note: noteTrimmed,
         status: "PENDING",
       },
     });

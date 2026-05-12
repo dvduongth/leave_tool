@@ -64,6 +64,10 @@ export async function POST(request: NextRequest) {
     if (bd > new Date()) {
       return Response.json({ error: "birthDate must be in the past" }, { status: 400 });
     }
+    const noteTrimmed = typeof note === "string" ? note.trim() : "";
+    if (!noteTrimmed) {
+      return Response.json({ error: "Vui lòng nhập ghi chú" }, { status: 400 });
+    }
 
     const employee = await prisma.employee.findUnique({
       where: { id: user.id },
@@ -81,7 +85,7 @@ export async function POST(request: NextRequest) {
         employeeId: user.id,
         birthDate: bd,
         name: name || null,
-        note: note || null,
+        note: noteTrimmed,
         status: "PENDING",
       },
     });
