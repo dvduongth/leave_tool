@@ -54,6 +54,7 @@
     "fieldStart": "開始時刻",
     "fieldNote": "メモ",
     "modeShort": "短い休憩（30分）",
+    "modeMedium": "1時間（60分）",
     "modeLong": "1.5時間（90分）",
     "endAutoHint": "終了は{end}（+{mins}分）。",
     "onlyFemale": "この機能は女性従業員のみ利用可能です。",

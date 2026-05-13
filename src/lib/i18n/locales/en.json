@@ -54,6 +54,7 @@
     "fieldStart": "Start time",
     "fieldNote": "Note",
     "modeShort": "Short break (30 min)",
+    "modeMedium": "1 hour (60 min)",
     "modeLong": "1.5 hours (90 min)",
     "endAutoHint": "Will end at {end} (+{mins} min).",
     "onlyFemale": "This feature is only available to female employees.",

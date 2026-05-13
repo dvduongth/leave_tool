@@ -9,6 +9,7 @@
 3. [Khái niệm](#3-khái-niệm)
 4. [Xin nghỉ phép](#4-xin-nghỉ-phép)
 5. [Ghi OT](#5-ghi-ot)
+   - 5.1. [Nghỉ đèn đỏ (Wellness)](#51-nghỉ-đèn-đỏ-wellness)
 6. [Flex Time](#6-flex-time)
 7. [Duyệt đơn](#7-duyệt-đơn-manager--head)
 8. [Báo cáo](#8-báo-cáo)
@@ -21,9 +22,10 @@
 
 **Leave Manager** số hoá toàn bộ quy trình xin nghỉ – duyệt – bù giờ. Các tính năng chính:
 
-- **Nghỉ phép**: xin phép năm, phép không lương; duyệt 2 cấp; grace period 2 tháng.
-- **OT**: ghi giờ làm thêm với hệ số theo loại ngày (thường / cuối tuần / lễ).
+- **Nghỉ phép**: xin phép năm; duyệt 2 cấp.
+- **OT**: ghi giờ làm thêm, đổi thành ngày nghỉ hoặc tiền (hệ số theo loại ngày).
 - **Flex Time**: theo dõi giờ thiếu và giờ bù, tự động kết toán cuối tháng.
+- **Wellness**: nghỉ đèn đỏ cho nhân viên nữ (tối đa 1.5h/tháng).
 - **Duyệt đơn**: Manager duyệt cấp 1, Head duyệt cấp 2.
 - **Báo cáo**: daily / weekly / monthly + biểu đồ.
 
@@ -39,14 +41,14 @@
 ## 3. Khái niệm
 
 - **Chu kỳ phép (Cycle)**: 01/06 → 31/05 năm sau. Cấp 96 giờ (12 ngày) / cycle.
-- **Grace period**: 2 tháng sau cycle (đến 31/07) vẫn dùng được phép cũ.
+- **Grace period (OT bank)**: Nếu dùng OT đổi thành ngày nghỉ, 2 tháng sau khi kết thúc chu kỳ (đến 31/07) vẫn được dùng OT bank của chu kỳ cũ nếu chưa hết.
 - **Thâm niên (Seniority)**: mỗi 5 năm được cộng thêm 8 giờ phép (1 ngày). Tính từ mốc 01/06 của năm vào làm, có lợi cho nhân viên.
   - Ví dụ: vào 15/03/2020 → mốc tính = 01/06/2019 → đến 01/06/2024 = 5 năm → +8h bonus
-- **Ca làm việc**:
-  - A: 07:00–17:00 (thứ 6: 07:00–16:00)
-  - B: 07:30–17:30 (thứ 6: 07:30–16:30)
-  - C: 09:00–19:00 (thứ 6: 10:00–19:00)
-  - D: 08:00–18:00 (thứ 6: 08:00–17:00)
+- **Ca làm việc** (đã trừ 1h nghỉ trưa 12:00–13:00):
+  - A: 07:00–17:00 (thứ 6: 07:00–16:00) → 8h weekday, 7h friday
+  - B: 07:30–17:30 (thứ 6: 07:30–16:30) → 8h weekday, 7h friday
+  - C: 09:00–19:00 (thứ 6: 10:00–19:00) → 8h weekday, 7h friday
+  - D: 08:00–18:00 (thứ 6: 08:00–17:00) → 8h weekday, 7h friday
 - **Friday Override**: Admin/Head có thể cấu hình tuần nào thứ 6 làm như ngày thường (8h thay vì 7h).
 - **Giờ nghỉ hợp lệ**: chỉ tính trong giờ hành chính, trừ 1 giờ nghỉ trưa. Không tính cuối tuần / lễ.
 - **Sắp xếp danh sách**: mọi danh sách nhân viên được sắp theo thâm niên (người vào lâu nhất trước).
@@ -55,7 +57,7 @@
 
 ### Quy trình
 
-1. **Tạo đơn**: `My Leaves → New Leave`. Chọn loại, giờ bắt đầu, số giờ. Hệ thống tự tính giờ kết thúc.
+1. **Tạo đơn**: `My Leaves → New Leave`. Chọn ngày + giờ bắt đầu, ngày + giờ kết thúc. Hệ thống tự tính tổng giờ nghỉ.
 2. **Lưu nháp / Submit**: có thể lưu `DRAFT` hoặc gửi duyệt ngay.
 3. **Duyệt cấp 1 (Manager)**: ≤ 8h + Manager OK → duyệt xong. &gt; 8h hoặc bạn là Manager → chuyển cấp 2.
 4. **Duyệt cấp 2 (Head)**: áp dụng với đơn dài hoặc người xin là Manager / Head.
@@ -79,13 +81,27 @@
 
 ## 5. Ghi OT
 
-`OT Records → Record OT`. Nhập ngày + giờ bắt đầu – kết thúc + lý do. Hệ số tự động:
+`OT Records → Record OT`. Nhập ngày, giờ bắt đầu – kết thúc, lý do.
 
-- **Ngày thường**: x1.5 (sau giờ tan ca)
-- **Cuối tuần**: x2.0
-- **Ngày lễ**: x3.0
+OT có thể đổi thành:
+- **Ngày nghỉ**: tích lũy vào OT bank, dùng bù khi xin nghỉ phép (xem mục 9.2)
+- **Tiền**: hệ thống tự tính hệ số theo loại ngày:
+  - Ngày thường (x1.5): sau giờ tan ca hành chính
+  - Cuối tuần (x2.0): Thứ 7, Chủ nhật
+  - Ngày lễ (x3.0): trùng danh sách Holidays
 
-> OT dùng cho báo cáo lương. Không cộng / trừ vào quỹ phép.
+## 5.1. Nghỉ đèn đỏ (Wellness)
+
+Áp dụng cho **nhân viên nữ**. Mỗi tháng được nghỉ tối đa **1.5 giờ**.
+
+1. Vào `Wellness` → chọn ngày + giờ bắt đầu + thời lượng:
+   - **Ngắn**: 30 phút
+   - **Trung bình**: 1 giờ (60 phút)
+   - **Dài**: 1.5 giờ (90 phút)
+2. Hệ thống tự tính giờ kết thúc.
+3. Không cần duyệt, không trừ phép.
+
+> Chỉ nhân viên có giới tính FEMALE mới thấy mục này trong sidebar.
 
 ## 6. Flex Time
 
@@ -170,10 +186,10 @@ Khi công ty cần tăng cường làm việc, Admin hoặc Head có thể cấu
 ## 10. FAQ
 
 **Nghỉ nửa buổi sáng thì ghi thế nào?**
-Tạo đơn, giờ bắt đầu = giờ vào ca, số giờ = 4.
+Tạo đơn với giờ bắt đầu = giờ vào ca, giờ kết thúc = 12:00 (nghỉ trưa).
 
-**Phép cycle cũ chưa dùng hết có mất không?**
-Grace period 2 tháng (đến 31/07 năm sau). Sau đó bị xoá.
+**OT bank cycle cũ chưa dùng hết có mất không?**
+Có grace period 2 tháng (đến 31/07 năm sau) để dùng OT đổi ngày nghỉ. Sau đó OT bank hết hạn.
 
 **Quên Submit, sếp không thấy đơn?**
 DRAFT chỉ mình bạn thấy. Mở đơn → `Submit`.

@@ -54,6 +54,7 @@
     "fieldStart": "Giờ bắt đầu",
     "fieldNote": "Ghi chú",
     "modeShort": "Nghỉ ngắn (30 phút)",
+    "modeMedium": "Nghỉ 1 giờ (60 phút)",
     "modeLong": "Nghỉ 1.5 giờ (90 phút)",
     "endAutoHint": "Sẽ kết thúc lúc {end} (+{mins} phút).",
     "onlyFemale": "Chức năng này chỉ dành cho nhân viên nữ.",

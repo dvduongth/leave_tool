@@ -43,6 +43,7 @@ import { useT } from "@/lib/i18n/provider";
 
 const MODE_DURATIONS = {
   SHORT: 30,
+  MEDIUM: 60,
   LONG: 90,
 } as const;
 
@@ -88,7 +89,7 @@ export default function WellnessPage() {
 
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formStart, setFormStart] = useState("10:00");
-  const [formMode, setFormMode] = useState<"SHORT" | "LONG">("SHORT");
+  const [formMode, setFormMode] = useState<"SHORT" | "MEDIUM" | "LONG">("MEDIUM");
   const [formNote, setFormNote] = useState("");
 
   const fetchRecords = useCallback(async () => {
@@ -353,6 +354,7 @@ export default function WellnessPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SHORT">{t("wellness.modeShort")}</SelectItem>
+                    <SelectItem value="MEDIUM">{t("wellness.modeMedium")}</SelectItem>
                     <SelectItem value="LONG">{t("wellness.modeLong")}</SelectItem>
                   </SelectContent>
                 </Select>
