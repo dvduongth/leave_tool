@@ -293,7 +293,12 @@ export default function FlexTimePage() {
             onValueChange={(val) => val && setSelectedEmployeeId(val)}
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder={t("common.selectMember")} />
+              <span className="truncate">
+                {selectedEmployeeId === "ALL"
+                  ? t("common.allMembers")
+                  : teamMembers.find((m) => m.id === selectedEmployeeId)?.name ??
+                    t("common.selectMember")}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">{t("common.allMembers")}</SelectItem>

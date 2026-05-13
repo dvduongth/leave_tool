@@ -294,7 +294,12 @@ export default function ReportsPage() {
             onValueChange={(val) => setDepartmentId(val ?? "ALL")}
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder={t("reports.allDepartments")} />
+              <span className="truncate">
+                {departmentId === "ALL"
+                  ? t("reports.allDepartments")
+                  : departments.find((d) => d.id === departmentId)?.name ??
+                    t("reports.allDepartments")}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">{t("reports.allDepartments")}</SelectItem>
