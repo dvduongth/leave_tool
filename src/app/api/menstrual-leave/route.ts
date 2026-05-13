@@ -8,6 +8,7 @@ import { MenstrualMode } from "@/generated/prisma";
 
 const MODE_DURATIONS: Record<MenstrualMode, number> = {
   SHORT: 30,
+  MEDIUM: 60,
   LONG: 90,
 };
 
