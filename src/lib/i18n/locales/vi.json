@@ -48,7 +48,7 @@
     "colNote": "Ghi chú",
     "empty": "Chưa có ghi nhận trong tháng này",
     "dialogTitle": "Ghi nhận nghỉ",
-    "dialogDesc": "Nghỉ ngắn {mins} phút trong ngày, tự động được chấp thuận.",
+    "dialogDesc": "Nghỉ ngắn {mins} phút trong ngày, cần duyệt 2 cấp (Quản lý → Trưởng phòng).",
     "fieldDate": "Ngày",
     "fieldMode": "Thời lượng",
     "fieldStart": "Giờ bắt đầu",

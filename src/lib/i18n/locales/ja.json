@@ -48,7 +48,7 @@
     "colNote": "メモ",
     "empty": "今月の記録はありません",
     "dialogTitle": "ウェルネス休憩を記録",
-    "dialogDesc": "{mins}分の休憩、自動承認されます。",
+    "dialogDesc": "{mins}分の休憩、2段階承認が必要（マネージャー→部門長）。",
     "fieldDate": "日付",
     "fieldMode": "時間",
     "fieldStart": "開始時刻",

@@ -48,7 +48,7 @@
     "colNote": "Note",
     "empty": "No records for this month",
     "dialogTitle": "Record wellness break",
-    "dialogDesc": "A {mins}-minute break, auto-approved.",
+    "dialogDesc": "A {mins}-minute break, requires 2-level approval (Manager → Head).",
     "fieldDate": "Date",
     "fieldMode": "Duration",
     "fieldStart": "Start time",
