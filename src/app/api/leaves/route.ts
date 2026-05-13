@@ -16,7 +16,17 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const employeeId = searchParams.get("employeeId");
-    const scope = searchParams.get("scope") || "own"; // "own" | "team"
+    let scope = searchParams.get("scope") || "own"; // "own" | "team"
+
+    // For approval statuses, automatically switch to team scope
+    const approvalStatuses: LeaveStatus[] = [
+      LeaveStatus.PENDING_MANAGER,
+      LeaveStatus.PENDING_HEAD,
+      LeaveStatus.CANCEL_PENDING,
+    ];
+    if (status && approvalStatuses.includes(status)) {
+      scope = "team";
+    }
 
     // Build where clause based on role and scope
     const where: Record<string, unknown> = {};
