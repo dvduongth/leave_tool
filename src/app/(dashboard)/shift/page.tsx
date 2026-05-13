@@ -43,23 +43,24 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 
 const DAY_LABELS_VI = ["", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6"];
-const SHIFT_OPTIONS: { value: "A" | "B" | "C"; label: string }[] = [
+const SHIFT_OPTIONS: { value: "A" | "B" | "C" | "D"; label: string }[] = [
   { value: "A", label: "Ca A (07:00–17:00, T6: 16:00)" },
   { value: "B", label: "Ca B (07:30–17:30, T6: 16:30)" },
   { value: "C", label: "Ca C (09:00–19:00, T6: 10:00–19:00)" },
+  { value: "D", label: "Ca D (08:00–18:00, T6: 17:00)" },
 ];
 
 interface MyShift {
-  weeklyShifts: Record<string, "A" | "B" | "C">;
+  weeklyShifts: Record<string, "A" | "B" | "C" | "D">;
   asOf: string;
-  fallback: "A" | "B" | "C";
+  fallback: "A" | "B" | "C" | "D";
 }
 
 interface ShiftChangeRequest {
   id: string;
   employeeId: string;
   effectiveDate: string;
-  weeklyShifts: Record<string, "A" | "B" | "C">;
+  weeklyShifts: Record<string, "A" | "B" | "C" | "D">;
   reason: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED";
   managerComment: string | null;
@@ -87,7 +88,7 @@ export default function ShiftPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formEffective, setFormEffective] = useState<Date | undefined>(undefined);
-  const [formShifts, setFormShifts] = useState<Record<number, "A" | "B" | "C">>({
+  const [formShifts, setFormShifts] = useState<Record<number, "A" | "B" | "C" | "D">>({
     1: "A",
     2: "A",
     3: "A",
@@ -407,7 +408,7 @@ export default function ShiftPage() {
                     <Select
                       value={formShifts[dow]}
                       onValueChange={(v) =>
-                        setFormShifts({ ...formShifts, [dow]: v as "A" | "B" | "C" })
+                        setFormShifts({ ...formShifts, [dow]: v as "A" | "B" | "C" | "D" })
                       }
                     >
                       <SelectTrigger className="flex-1">

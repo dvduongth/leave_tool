@@ -58,7 +58,7 @@ interface Department {
 }
 
 const ROLES = ["EMPLOYEE", "MANAGER", "HEAD", "ADMIN"];
-const SHIFTS = ["A", "B", "C"];
+const SHIFTS = ["A", "B", "C", "D"];
 const GENDERS = ["UNSPECIFIED", "MALE", "FEMALE", "OTHER"];
 
 export default function AdminEmployeesPage() {

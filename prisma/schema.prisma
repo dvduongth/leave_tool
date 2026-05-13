@@ -18,6 +18,7 @@ enum ShiftType {
   A
   B
   C
+  D
 }
 
 enum Gender {

@@ -39,6 +39,16 @@ const SHIFT_CONFIG: Record<
       { start: "13:00", end: "19:00" },
     ],
   },
+  D: {
+    weekday: [
+      { start: "08:00", end: "12:00" },
+      { start: "13:00", end: "18:00" },
+    ],
+    friday: [
+      { start: "08:00", end: "12:00" },
+      { start: "13:00", end: "17:00" },
+    ],
+  },
 };
 
 export function timeToMinutes(time: string): number {
