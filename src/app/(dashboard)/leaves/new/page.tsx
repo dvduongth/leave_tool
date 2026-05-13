@@ -66,8 +66,10 @@ export default function NewLeavePage() {
   const router = useRouter();
   const t = useT();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [startDateOpen, setStartDateOpen] = useState(false);
   const [startTime, setStartTime] = useState("08:00");
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [endDateOpen, setEndDateOpen] = useState(false);
   const [endTime, setEndTime] = useState("17:00");
   const [reason, setReason] = useState("");
   const [balance, setBalance] = useState<BalanceInfo | null>(null);
@@ -238,7 +240,7 @@ export default function NewLeavePage() {
           {/* Start Date */}
           <div className="space-y-2">
             <Label>{t("newLeave.startDate")}</Label>
-            <Popover>
+            <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
               <PopoverTrigger
                 className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
               >
@@ -253,7 +255,7 @@ export default function NewLeavePage() {
                 <Calendar
                   mode="single"
                   selected={startDate}
-                  onSelect={(date) => setStartDate(date ?? undefined)}
+                  onSelect={(date) => { setStartDate(date ?? undefined); setStartDateOpen(false); }}
                   disabled={(date) => {
                     const day = date.getDay();
                     return day === 0 || day === 6 || date < new Date(new Date().setHours(0, 0, 0, 0));
@@ -283,7 +285,7 @@ export default function NewLeavePage() {
           {/* End Date */}
           <div className="space-y-2">
             <Label>Ngày kết thúc</Label>
-            <Popover>
+            <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
               <PopoverTrigger
                 className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
               >
@@ -298,7 +300,7 @@ export default function NewLeavePage() {
                 <Calendar
                   mode="single"
                   selected={endDate}
-                  onSelect={(date) => setEndDate(date ?? undefined)}
+                  onSelect={(date) => { setEndDate(date ?? undefined); setEndDateOpen(false); }}
                   disabled={(date) => {
                     const day = date.getDay();
                     const beforeStart = startDate ? date < startDate : false;

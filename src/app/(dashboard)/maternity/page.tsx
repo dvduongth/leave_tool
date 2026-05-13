@@ -84,12 +84,14 @@ export default function MaternityPage() {
   // Child declare dialog
   const [childDialog, setChildDialog] = useState(false);
   const [childBirth, setChildBirth] = useState<Date | undefined>(undefined);
+  const [childBirthOpen, setChildBirthOpen] = useState(false);
   const [childName, setChildName] = useState("");
   const [childNote, setChildNote] = useState("");
 
   // Maternity leave log dialog
   const [leaveDialog, setLeaveDialog] = useState(false);
   const [leaveDate, setLeaveDate] = useState<Date | undefined>(undefined);
+  const [leaveDateOpen, setLeaveDateOpen] = useState(false);
   const [leaveMode, setLeaveMode] = useState<"EARLY_LEAVE" | "LATE_ARRIVAL">("EARLY_LEAVE");
   const [leaveStart, setLeaveStart] = useState("16:00");
   const [leaveEnd, setLeaveEnd] = useState("17:00");
@@ -490,7 +492,7 @@ export default function MaternityPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Ngày sinh con</Label>
-              <Popover>
+              <Popover open={childBirthOpen} onOpenChange={setChildBirthOpen}>
                 <PopoverTrigger className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm hover:bg-muted">
                   <CalendarIcon className="size-4 text-muted-foreground" />
                   {childBirth ? format(childBirth, "MMM d, yyyy") : "Chọn ngày"}
@@ -499,7 +501,7 @@ export default function MaternityPage() {
                   <Calendar
                     mode="single"
                     selected={childBirth}
-                    onSelect={setChildBirth}
+                    onSelect={(date) => { setChildBirth(date); setChildBirthOpen(false); }}
                     disabled={(d) => d > new Date()}
                   />
                 </PopoverContent>
@@ -533,13 +535,13 @@ export default function MaternityPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Ngày</Label>
-              <Popover>
+              <Popover open={leaveDateOpen} onOpenChange={setLeaveDateOpen}>
                 <PopoverTrigger className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm hover:bg-muted">
                   <CalendarIcon className="size-4 text-muted-foreground" />
                   {leaveDate ? format(leaveDate, "MMM d, yyyy") : "Chọn ngày"}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={leaveDate} onSelect={setLeaveDate} />
+                  <Calendar mode="single" selected={leaveDate} onSelect={(date) => { setLeaveDate(date); setLeaveDateOpen(false); }} />
                 </PopoverContent>
               </Popover>
             </div>

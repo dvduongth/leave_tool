@@ -110,6 +110,7 @@ export default function FlexTimePage() {
 
   // Form state
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
+  const [formDateOpen, setFormDateOpen] = useState(false);
   const [formMinutes, setFormMinutes] = useState("");
   const [formReason, setFormReason] = useState("");
 
@@ -596,7 +597,7 @@ export default function FlexTimePage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("flex.colDate")}</Label>
-              <Popover>
+              <Popover open={formDateOpen} onOpenChange={setFormDateOpen}>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
                 >
@@ -609,7 +610,10 @@ export default function FlexTimePage() {
                   <Calendar
                     mode="single"
                     selected={formDate}
-                    onSelect={(date) => setFormDate(date ?? undefined)}
+                    onSelect={(date) => {
+                      setFormDate(date ?? undefined);
+                      setFormDateOpen(false);
+                    }}
                   />
                 </PopoverContent>
               </Popover>

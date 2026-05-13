@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -47,11 +48,14 @@ const MODE_DURATIONS = {
   LONG: 90,
 } as const;
 
+type MenstrualStatus = "PENDING_MANAGER" | "PENDING_HEAD" | "APPROVED" | "REJECTED";
+
 interface MenstrualRecord {
   id: string;
   date: string;
   startTime: string;
   endTime: string;
+  status: MenstrualStatus;
   note: string | null;
 }
 
@@ -88,6 +92,7 @@ export default function WellnessPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
+  const [dateOpen, setDateOpen] = useState(false);
   const [formStart, setFormStart] = useState("10:00");
   const [formMode, setFormMode] = useState<"SHORT" | "MEDIUM" | "LONG">("MEDIUM");
   const [formNote, setFormNote] = useState("");
@@ -250,6 +255,7 @@ export default function WellnessPage() {
                   <TableHead>{t("wellness.colDate")}</TableHead>
                   <TableHead>{t("wellness.colStart")}</TableHead>
                   <TableHead>{t("wellness.colEnd")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
                   <TableHead>{t("wellness.colNote")}</TableHead>
                   <TableHead className="text-right">
                     {t("common.actions")}
@@ -260,7 +266,7 @@ export default function WellnessPage() {
                 {loading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("common.loading")}
@@ -269,7 +275,7 @@ export default function WellnessPage() {
                 ) : records.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="h-24 text-center text-muted-foreground"
                     >
                       {t("wellness.empty")}
@@ -278,7 +284,7 @@ export default function WellnessPage() {
                 ) : (
                   records.map((r) => {
                     const recordDate = new Date(r.date);
-                    const canDelete = recordDate >= today;
+                    const canDelete = recordDate >= today && r.status !== "APPROVED";
                     return (
                       <TableRow key={r.id}>
                         <TableCell>
@@ -286,6 +292,9 @@ export default function WellnessPage() {
                         </TableCell>
                         <TableCell>{r.startTime}</TableCell>
                         <TableCell>{r.endTime}</TableCell>
+                        <TableCell>
+                          <MenstrualStatusBadge status={r.status} />
+                        </TableCell>
                         <TableCell className="text-muted-foreground max-w-[240px] truncate">
                           {r.note || "-"}
                         </TableCell>
@@ -327,7 +336,7 @@ export default function WellnessPage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>{t("wellness.fieldDate")}</Label>
-                <Popover>
+                <Popover open={dateOpen} onOpenChange={setDateOpen}>
                   <PopoverTrigger className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted">
                     <CalendarIcon className="size-4" />
                     {formDate
@@ -338,7 +347,10 @@ export default function WellnessPage() {
                     <Calendar
                       mode="single"
                       selected={formDate}
-                      onSelect={setFormDate}
+                      onSelect={(date) => {
+                        setFormDate(date);
+                        setDateOpen(false);
+                      }}
                     />
                   </PopoverContent>
                 </Popover>
@@ -404,4 +416,15 @@ export default function WellnessPage() {
       </Dialog>
     </div>
   );
+}
+
+function MenstrualStatusBadge({ status }: { status: MenstrualStatus }) {
+  const variants: Record<MenstrualStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    PENDING_MANAGER: { variant: "secondary", label: "Chờ Manager" },
+    PENDING_HEAD: { variant: "secondary", label: "Chờ Head" },
+    APPROVED: { variant: "default", label: "Đã duyệt" },
+    REJECTED: { variant: "destructive", label: "Từ chối" },
+  };
+  const { variant, label } = variants[status] || { variant: "outline" as const, label: status };
+  return <Badge variant={variant}>{label}</Badge>;
 }

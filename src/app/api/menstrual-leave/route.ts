@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth-utils";
 import { parseDateInput } from "@/lib/date-utils";
 import { getConfigNumber } from "@/lib/config";
 import { createNotification } from "@/lib/notifications";
-import { MenstrualMode } from "@/generated/prisma";
+import { MenstrualMode, MenstrualStatus } from "@/generated/prisma";
 
 const MODE_DURATIONS: Record<MenstrualMode, number> = {
   SHORT: 30,
@@ -161,17 +161,18 @@ export async function POST(request: NextRequest) {
         startTime,
         endTime,
         mode: selectedMode,
+        status: MenstrualStatus.PENDING_MANAGER,
         note: noteTrimmed,
       },
     });
 
-    // Notify manager for awareness (auto-approved, no action needed).
+    // Notify manager for approval
     if (employee.managerId) {
       await createNotification(
         employee.managerId,
-        "Menstrual leave logged",
-        `${employee.name} logged a ${durationMins}-minute wellness break on ${date}`,
-        `/wellness`
+        "Wellness leave pending approval",
+        `${employee.name} requested a ${durationMins}-minute wellness break on ${date}`,
+        `/approvals`
       );
     }
 

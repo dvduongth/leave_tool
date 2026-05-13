@@ -139,6 +139,7 @@ export default function ReportsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [data, setData] = useState<DailyData | WeeklyData | MonthlyData | MonthlyDetailData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Fetch departments for filter
   useEffect(() => {
@@ -274,7 +275,7 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <Popover>
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted">
             <CalendarIcon className="size-4" />
             {format(selectedDate, "MMM d, yyyy")}
@@ -283,7 +284,12 @@ export default function ReportsPage() {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                  setDatePickerOpen(false);
+                }
+              }}
             />
           </PopoverContent>
         </Popover>

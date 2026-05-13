@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { CalendarIcon, Plus, Users, User } from "lucide-react";
+import { useLeaves, useTeamMembers } from "@/lib/swr";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -59,58 +60,34 @@ export default function LeavesPage() {
   const router = useRouter();
   const t = useT();
   const { data: session } = useSession();
-  const [leaves, setLeaves] = useState<LeaveRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [scope, setScope] = useState<"own" | "team">("own");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("ALL");
+  const [dateFromOpen, setDateFromOpen] = useState(false);
+  const [dateToOpen, setDateToOpen] = useState(false);
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
   const canViewTeam = userRole === "MANAGER" || userRole === "HEAD" || userRole === "ADMIN";
 
-  // Fetch team members when scope changes to "team"
-  useEffect(() => {
-    if (scope === "team" && canViewTeam) {
-      fetch("/api/team-members")
-        .then((r) => (r.ok ? r.json() : { members: [] }))
-        .then((data) => setTeamMembers(data.members || []))
-        .catch(() => setTeamMembers([]));
-    }
-  }, [scope, canViewTeam]);
+  // SWR hooks for data fetching with caching
+  const { data: teamData } = useTeamMembers();
+  const teamMembers: TeamMember[] = (scope === "team" && canViewTeam && teamData?.members) || [];
+
+  const { data: leavesData, isLoading: loading } = useLeaves({
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
+    from: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+    to: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+    scope,
+    employeeId: scope === "team" && selectedEmployeeId !== "ALL" ? selectedEmployeeId : undefined,
+  });
+  const leaves: LeaveRow[] = leavesData ?? [];
 
   // Reset employee filter when switching scope
   useEffect(() => {
     setSelectedEmployeeId("ALL");
   }, [scope]);
-
-  const fetchLeaves = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "ALL") params.set("status", statusFilter);
-      if (dateFrom) params.set("from", format(dateFrom, 'yyyy-MM-dd'));
-      if (dateTo) params.set("to", format(dateTo, 'yyyy-MM-dd'));
-      params.set("scope", scope);
-      if (scope === "team" && selectedEmployeeId !== "ALL") {
-        params.set("employeeId", selectedEmployeeId);
-      }
-
-      const res = await fetch(`/api/leaves?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLeaves(data);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, dateFrom, dateTo, scope, selectedEmployeeId]);
-
-  useEffect(() => {
-    fetchLeaves();
-  }, [fetchLeaves]);
 
   return (
     <div className="space-y-6">
@@ -194,7 +171,7 @@ export default function LeavesPage() {
           </SelectContent>
         </Select>
 
-        <Popover>
+        <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
           <PopoverTrigger
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted"
           >
@@ -205,12 +182,12 @@ export default function LeavesPage() {
             <Calendar
               mode="single"
               selected={dateFrom}
-              onSelect={(date) => setDateFrom(date ?? undefined)}
+              onSelect={(date) => { setDateFrom(date ?? undefined); setDateFromOpen(false); }}
             />
           </PopoverContent>
         </Popover>
 
-        <Popover>
+        <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
           <PopoverTrigger
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted"
           >
@@ -221,7 +198,7 @@ export default function LeavesPage() {
             <Calendar
               mode="single"
               selected={dateTo}
-              onSelect={(date) => setDateTo(date ?? undefined)}
+              onSelect={(date) => { setDateTo(date ?? undefined); setDateToOpen(false); }}
             />
           </PopoverContent>
         </Popover>

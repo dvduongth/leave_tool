@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
@@ -11,6 +10,7 @@ import {
   ClipboardList,
   TrendingUp,
 } from "lucide-react";
+import { useDashboard } from "@/lib/swr";
 import {
   Card,
   CardContent,
@@ -71,17 +71,9 @@ interface DashboardData {
 export default function DashboardPage() {
   const router = useRouter();
   const t = useT();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useDashboard() as { data: DashboardData | undefined; isLoading: boolean };
 
-  useEffect(() => {
-    fetch("/api/dashboard")
-      .then((res) => res.json())
-      .then((d) => setData(d))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-48 items-center justify-center text-muted-foreground">
         {t("dashboard.loading")}

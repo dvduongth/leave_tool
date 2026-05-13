@@ -97,6 +97,7 @@ export default function ShiftPage() {
   });
   const [formReason, setFormReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [effectiveDateOpen, setEffectiveDateOpen] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -381,7 +382,7 @@ export default function ShiftPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Hiệu lực từ ngày</Label>
-              <Popover>
+              <Popover open={effectiveDateOpen} onOpenChange={setEffectiveDateOpen}>
                 <PopoverTrigger className="flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm hover:bg-muted">
                   <CalendarIcon className="size-4 text-muted-foreground" />
                   {formEffective
@@ -392,7 +393,10 @@ export default function ShiftPage() {
                   <Calendar
                     mode="single"
                     selected={formEffective}
-                    onSelect={setFormEffective}
+                    onSelect={(date) => {
+                      setFormEffective(date);
+                      setEffectiveDateOpen(false);
+                    }}
                     disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                   />
                 </PopoverContent>

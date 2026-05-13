@@ -95,6 +95,7 @@ export default function OTPage() {
 
   // Form state
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
+  const [formDateOpen, setFormDateOpen] = useState(false);
   const [formStart, setFormStart] = useState("18:00");
   const [formEnd, setFormEnd] = useState("20:00");
   const [formNote, setFormNote] = useState("");
@@ -528,7 +529,7 @@ export default function OTPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("ot.colDate")}</Label>
-              <Popover>
+              <Popover open={formDateOpen} onOpenChange={setFormDateOpen}>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
                 >
@@ -541,7 +542,10 @@ export default function OTPage() {
                   <Calendar
                     mode="single"
                     selected={formDate}
-                    onSelect={(date) => setFormDate(date ?? undefined)}
+                    onSelect={(date) => {
+                      setFormDate(date ?? undefined);
+                      setFormDateOpen(false);
+                    }}
                   />
                 </PopoverContent>
               </Popover>

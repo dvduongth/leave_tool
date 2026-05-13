@@ -55,6 +55,7 @@ export default function AdminFridayOverridePage() {
   // Form state
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formNote, setFormNote] = useState("");
+  const [dateOpen, setDateOpen] = useState(false);
 
   const fetchOverrides = useCallback(async () => {
     setLoading(true);
@@ -230,7 +231,7 @@ export default function AdminFridayOverridePage() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("admin.fridayOverride.selectWeek")}</Label>
-              <Popover>
+              <Popover open={dateOpen} onOpenChange={setDateOpen}>
                 <PopoverTrigger
                   className="inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-left font-normal text-muted-foreground hover:bg-muted"
                 >
@@ -246,7 +247,7 @@ export default function AdminFridayOverridePage() {
                   <Calendar
                     mode="single"
                     selected={formDate}
-                    onSelect={(date) => setFormDate(date ?? undefined)}
+                    onSelect={(date) => { setFormDate(date ?? undefined); setDateOpen(false); }}
                   />
                 </PopoverContent>
               </Popover>

@@ -51,56 +51,51 @@ export default async function HelpPage() {
       <HelpTranslator>
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex flex-wrap gap-1 h-auto">
-          <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-          <TabsTrigger value="leave">Xin nghỉ phép</TabsTrigger>
-          <TabsTrigger value="ot">Ghi OT</TabsTrigger>
-          <TabsTrigger value="flex">Flex Time</TabsTrigger>
-          <TabsTrigger value="wellness">Wellness</TabsTrigger>
+          <TabsTrigger value="overview">{t("help.tabs.overview")}</TabsTrigger>
+          <TabsTrigger value="leave">{t("help.tabs.leave")}</TabsTrigger>
+          <TabsTrigger value="ot">{t("help.tabs.ot")}</TabsTrigger>
+          <TabsTrigger value="flex">{t("help.tabs.flex")}</TabsTrigger>
+          <TabsTrigger value="wellness">{t("help.tabs.wellness")}</TabsTrigger>
           {(role === "MANAGER" || role === "HEAD" || role === "ADMIN") && (
-            <TabsTrigger value="approve">Duyệt đơn</TabsTrigger>
+            <TabsTrigger value="approve">{t("help.tabs.approve")}</TabsTrigger>
           )}
           {(role === "MANAGER" || role === "HEAD" || role === "ADMIN") && (
-            <TabsTrigger value="reports">Báo cáo</TabsTrigger>
+            <TabsTrigger value="reports">{t("help.tabs.reports")}</TabsTrigger>
           )}
-          {role === "ADMIN" && <TabsTrigger value="admin">Quản trị</TabsTrigger>}
-          <TabsTrigger value="faq">FAQ</TabsTrigger>
+          {role === "ADMIN" && <TabsTrigger value="admin">{t("help.tabs.admin")}</TabsTrigger>}
+          <TabsTrigger value="faq">{t("help.tabs.faq")}</TabsTrigger>
         </TabsList>
 
-        {/* TỔNG QUAN */}
+        {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Info className="size-5" /> Giới thiệu hệ thống
+                <Info className="size-5" /> {t("help.overview.introTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed">
-              <p>
-                <b>Leave Manager</b> là hệ thống quản lý nghỉ phép, OT (làm thêm
-                giờ) và Flex Time (bù giờ thiếu). Mục tiêu: số hoá toàn bộ quy
-                trình xin nghỉ – duyệt – bù giờ, giảm giấy tờ, minh bạch quỹ
-                phép.
-              </p>
+              <p>{t("help.overview.introDesc")}</p>
               <div className="grid gap-3 md:grid-cols-2">
                 <FeatureBox
                   icon={CalendarDays}
-                  title="Nghỉ phép"
-                  text="Xin phép năm, phép không lương; duyệt 2 cấp; có grace period 2 tháng"
+                  title={t("help.overview.featureLeaveTitle")}
+                  text={t("help.overview.featureLeaveDesc")}
                 />
                 <FeatureBox
                   icon={Clock}
-                  title="OT"
-                  text="Ghi giờ làm thêm, đổi thành ngày nghỉ (OT bank) hoặc tiền (hệ số theo loại ngày)"
+                  title={t("help.overview.featureOtTitle")}
+                  text={t("help.overview.featureOtDesc")}
                 />
                 <FeatureBox
                   icon={Timer}
-                  title="Flex Time"
-                  text="Theo dõi giờ thiếu trong tháng và giờ bù; tự động kết toán cuối tháng"
+                  title={t("help.overview.featureFlexTitle")}
+                  text={t("help.overview.featureFlexDesc")}
                 />
                 <FeatureBox
                   icon={CheckSquare}
-                  title="Duyệt đơn"
-                  text="Manager duyệt cấp 1, Head duyệt cấp 2 (nếu có)"
+                  title={t("help.overview.featureApproveTitle")}
+                  text={t("help.overview.featureApproveDesc")}
                 />
               </div>
             </CardContent>
@@ -108,95 +103,49 @@ export default async function HelpPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Vai trò trong hệ thống</CardTitle>
+              <CardTitle>{t("help.overview.rolesTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <RoleRow
-                role="EMPLOYEE"
-                desc="Nhân viên: xin nghỉ, ghi OT, ghi Flex Time, xem báo cáo cá nhân."
-              />
-              <RoleRow
-                role="MANAGER"
-                desc="Quản lý trực tiếp: duyệt cấp 1 đơn của nhân viên trong team."
-              />
-              <RoleRow
-                role="HEAD"
-                desc="Trưởng bộ phận: duyệt cấp 2, duyệt Flex Time, xem báo cáo toàn phòng."
-              />
-              <RoleRow
-                role="ADMIN"
-                desc="Quản trị: CRUD nhân viên, ngày lễ, xem tất cả báo cáo."
-              />
+              <RoleRow role="EMPLOYEE" desc={t("help.overview.roleEmployee")} />
+              <RoleRow role="MANAGER" desc={t("help.overview.roleManager")} />
+              <RoleRow role="HEAD" desc={t("help.overview.roleHead")} />
+              <RoleRow role="ADMIN" desc={t("help.overview.roleAdmin")} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Khái niệm cần biết</CardTitle>
+              <CardTitle>{t("help.overview.conceptsTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <Concept
-                term="Chu kỳ phép (Cycle)"
-                desc="Chu kỳ phép năm từ 01/06 → 31/05 năm sau. Mỗi nhân viên được cấp 96 giờ (12 ngày)."
-              />
-              <Concept
-                term="Grace period (OT bank)"
-                desc="Nếu dùng OT đổi thành ngày nghỉ, 2 tháng sau khi kết thúc chu kỳ (đến 31/07) vẫn được dùng OT bank của chu kỳ cũ nếu chưa hết."
-              />
-              <Concept
-                term="Thâm niên (Seniority)"
-                desc="Mỗi 5 năm được +8h (1 ngày). Mốc tính từ 01/06 của năm vào làm (có lợi cho nhân viên)."
-              />
-              <Concept
-                term="Ca làm việc (Shift)"
-                desc="A (7:00-17:00), B (7:30-17:30), C (9:00-19:00), D (8:00-18:00). Thứ 6 nghỉ sớm 1h. Đã trừ 1h nghỉ trưa → 8h weekday, 7h friday."
-              />
-              <Concept
-                term="Giờ nghỉ hợp lệ"
-                desc="Chỉ tính trong giờ hành chính của ca, trừ 1 giờ nghỉ trưa 12:00-13:00. Không tính cuối tuần, ngày lễ."
-              />
+              <Concept term={t("help.overview.conceptCycle")} desc={t("help.overview.conceptCycleDesc")} />
+              <Concept term={t("help.overview.conceptGrace")} desc={t("help.overview.conceptGraceDesc")} />
+              <Concept term={t("help.overview.conceptSeniority")} desc={t("help.overview.conceptSeniorityDesc")} />
+              <Concept term={t("help.overview.conceptShift")} desc={t("help.overview.conceptShiftDesc")} />
+              <Concept term={t("help.overview.conceptValidHours")} desc={t("help.overview.conceptValidHoursDesc")} />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* XIN NGHỈ PHÉP */}
+        {/* LEAVE */}
         <TabsContent value="leave" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CalendarDays className="size-5" /> Quy trình xin nghỉ
+                <CalendarDays className="size-5" /> {t("help.leave.processTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <Step n={1} title="Tạo đơn nghỉ">
-                Vào <b>My Leaves → New Leave</b>. Chọn loại (Có lương / Không
-                lương), thời gian bắt đầu, số giờ xin nghỉ. Hệ thống tự tính giờ
-                kết thúc theo ca làm việc.
-              </Step>
-              <Step n={2} title="Lưu nháp hoặc gửi duyệt">
-                Có thể lưu <i>Draft</i> để chỉnh sửa sau, hoặc gửi thẳng{" "}
-                <b>Submit</b> để chuyển sang trạng thái chờ duyệt.
-              </Step>
-              <Step n={3} title="Duyệt cấp 1 (Manager)">
-                Manager sẽ nhận thông báo. Nếu đơn ≤ 8 giờ và Manager OK thì
-                duyệt xong. Nếu &gt; 8 giờ hoặc Manager là bạn → chuyển tiếp cấp
-                2.
-              </Step>
-              <Step n={4} title="Duyệt cấp 2 (Head)">
-                Áp dụng với đơn dài &gt; 8 giờ hoặc người xin là Manager/Head.
-              </Step>
-              <Step n={5} title="Đã duyệt / Từ chối">
-                Nếu được duyệt, giờ phép tự trừ vào quỹ. Nếu bị từ chối, có thể
-                sửa và gửi lại.
-              </Step>
+              <Step n={1} title={t("help.leave.step1Title")}>{t("help.leave.step1Desc")}</Step>
+              <Step n={2} title={t("help.leave.step2Title")}>{t("help.leave.step2Desc")}</Step>
+              <Step n={3} title={t("help.leave.step3Title")}>{t("help.leave.step3Desc")}</Step>
+              <Step n={4} title={t("help.leave.step4Title")}>{t("help.leave.step4Desc")}</Step>
+              <Step n={5} title={t("help.leave.step5Title")}>{t("help.leave.step5Desc")}</Step>
 
               <div className="mt-4 rounded-md border bg-muted/40 p-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="size-4 text-amber-500 mt-0.5" />
-                  <div>
-                    <b>Huỷ đơn đã duyệt:</b> chỉ có thể yêu cầu huỷ (Cancel
-                    Request) và cần Manager/Head duyệt lại.
-                  </div>
+                  <div>{t("help.leave.cancelNote")}</div>
                 </div>
               </div>
             </CardContent>
@@ -204,16 +153,16 @@ export default async function HelpPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Trạng thái đơn</CardTitle>
+              <CardTitle>{t("help.leave.statusTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm md:grid-cols-2">
-              <StatusRow label="DRAFT" desc="Nháp — chưa gửi" />
-              <StatusRow label="PENDING_MANAGER" desc="Chờ Manager duyệt" />
-              <StatusRow label="PENDING_HEAD" desc="Chờ Head duyệt" />
-              <StatusRow label="APPROVED" desc="Đã duyệt, giờ đã trừ quỹ" />
-              <StatusRow label="REJECTED" desc="Bị từ chối" />
-              <StatusRow label="CANCEL_PENDING" desc="Đang xin huỷ" />
-              <StatusRow label="CANCELLED" desc="Đã huỷ (hoàn giờ phép)" />
+              <StatusRow label="DRAFT" desc={t("help.leave.statusDraft")} />
+              <StatusRow label="PENDING_MANAGER" desc={t("help.leave.statusPendingManager")} />
+              <StatusRow label="PENDING_HEAD" desc={t("help.leave.statusPendingHead")} />
+              <StatusRow label="APPROVED" desc={t("help.leave.statusApproved")} />
+              <StatusRow label="REJECTED" desc={t("help.leave.statusRejected")} />
+              <StatusRow label="CANCEL_PENDING" desc={t("help.leave.statusCancelPending")} />
+              <StatusRow label="CANCELLED" desc={t("help.leave.statusCancelled")} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -223,28 +172,17 @@ export default async function HelpPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="size-5" /> Ghi OT (Overtime)
+                <Clock className="size-5" /> {t("help.ot.title")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <p>
-                Vào <b>OT Records</b> → <b>Record OT</b>. Nhập ngày, giờ bắt
-                đầu – kết thúc, lý do. Hệ thống tự tính hệ số:
-              </p>
+              <p>{t("help.ot.desc")}</p>
               <ul className="ml-4 list-disc space-y-1">
-                <li>
-                  <b>Ngày thường (x1.5)</b>: sau giờ tan ca hành chính
-                </li>
-                <li>
-                  <b>Cuối tuần (x2.0)</b>: Thứ 7, Chủ nhật
-                </li>
-                <li>
-                  <b>Ngày lễ (x3.0)</b>: trùng danh sách holidays
-                </li>
+                <li>{t("help.ot.rateWeekday")}</li>
+                <li>{t("help.ot.rateWeekend")}</li>
+                <li>{t("help.ot.rateHoliday")}</li>
               </ul>
-              <p>
-                OT có thể đổi thành <b>ngày nghỉ</b> (tích lũy vào OT bank, dùng bù khi xin nghỉ phép) hoặc <b>tiền</b> (theo hệ số trên).
-              </p>
+              <p>{t("help.ot.convertNote")}</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -254,107 +192,72 @@ export default async function HelpPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Timer className="size-5" /> Flex Time (Bù giờ)
+                <Timer className="size-5" /> {t("help.flex.title")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <p>
-                Flex Time dùng cho các trường hợp <b>thiếu giờ</b> trong tháng
-                (đi trễ, về sớm, việc riêng &lt; 4h…) mà <i>không trừ phép</i>.
-                Nhân viên cần <b>bù lại</b> số giờ thiếu này trong cùng tháng.
-              </p>
-              <Step n={1} title="Ghi Deficit (thiếu giờ)">
-                Vào <b>Flex Time</b> → <b>Record Deficit</b>. Ghi rõ ngày, số
-                giờ thiếu, lý do.
-              </Step>
-              <Step n={2} title="Ghi Makeup (bù giờ)">
-                Khi đã làm bù → <b>Record Makeup</b>. Head sẽ xác nhận.
-              </Step>
-              <Step n={3} title="Kết toán cuối tháng">
-                Vào ngày cuối tháng, hệ thống tự chạy cron kết toán: nếu còn
-                <i> thiếu giờ chưa bù</i>, phần đó <b>trừ vào quỹ phép năm</b>.
-              </Step>
+              <p>{t("help.flex.desc")}</p>
+              <Step n={1} title={t("help.flex.step1Title")}>{t("help.flex.step1Desc")}</Step>
+              <Step n={2} title={t("help.flex.step2Title")}>{t("help.flex.step2Desc")}</Step>
+              <Step n={3} title={t("help.flex.step3Title")}>{t("help.flex.step3Desc")}</Step>
               <div className="rounded-md border bg-amber-50 dark:bg-amber-950/30 p-3">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="size-4 text-amber-600 mt-0.5" />
-                  <div>
-                    Trước ngày 25 hàng tháng, hệ thống gửi cảnh báo nếu bạn còn
-                    nợ giờ.
-                  </div>
+                  <div>{t("help.flex.warningNote")}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* WELLNESS (Nghỉ đèn đỏ) */}
+        {/* WELLNESS */}
         <TabsContent value="wellness" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="size-5" /> Nghỉ đèn đỏ (Wellness)
+                <Clock className="size-5" /> {t("help.wellness.title")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <p>
-                Áp dụng cho <b>nhân viên nữ</b>. Mỗi tháng được nghỉ tối đa <b>1.5 giờ</b>.
-              </p>
-              <Step n={1} title="Đăng ký nghỉ">
-                Vào <b>Wellness</b> → chọn ngày + giờ bắt đầu + thời lượng:
-              </Step>
+              <p>{t("help.wellness.desc")}</p>
+              <Step n={1} title={t("help.wellness.step1Title")}>{t("help.wellness.step1Desc")}</Step>
               <ul className="ml-10 list-disc space-y-1">
-                <li><b>Ngắn</b>: 30 phút</li>
-                <li><b>Trung bình</b>: 1 giờ (60 phút)</li>
-                <li><b>Dài</b>: 1.5 giờ (90 phút)</li>
+                <li>{t("help.wellness.modeShort")}</li>
+                <li>{t("help.wellness.modeMedium")}</li>
+                <li>{t("help.wellness.modeLong")}</li>
               </ul>
-              <Step n={2} title="Tự động tính giờ kết thúc">
-                Hệ thống tự tính giờ kết thúc dựa trên thời lượng đã chọn.
-              </Step>
+              <Step n={2} title={t("help.wellness.step2Title")}>{t("help.wellness.step2Desc")}</Step>
+              <Step n={3} title={t("help.wellness.step3Title")}>{t("help.wellness.step3Desc")}</Step>
               <div className="rounded-md border bg-muted/40 p-3">
                 <div className="flex items-start gap-2">
                   <Info className="size-4 text-primary mt-0.5" />
-                  <div>
-                    Không cần duyệt, không trừ phép. Chỉ nhân viên có giới tính FEMALE mới thấy mục này trong sidebar.
-                  </div>
+                  <div>{t("help.wellness.note")}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* DUYỆT ĐƠN */}
+        {/* APPROVE */}
         {(role === "MANAGER" || role === "HEAD" || role === "ADMIN") && (
           <TabsContent value="approve" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckSquare className="size-5" /> Duyệt đơn
+                  <CheckSquare className="size-5" /> {t("help.approve.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p>
-                  Vào mục <b>Approvals</b> để xem danh sách đơn chờ duyệt thuộc
-                  quyền bạn.
-                </p>
+                <p>{t("help.approve.desc")}</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li>Bấm vào đơn để xem chi tiết + lịch sử.</li>
-                  <li>
-                    <b>Approve</b> để duyệt. Nếu cần cấp 2, đơn sẽ tự chuyển
-                    tiếp.
-                  </li>
-                  <li>
-                    <b>Reject</b> bắt buộc ghi lý do. Nhân viên sẽ nhận thông
-                    báo.
-                  </li>
-                  <li>
-                    Đơn <b>Cancel Request</b> (xin huỷ đơn đã duyệt) cũng hiện ở
-                    đây.
-                  </li>
+                  <li>{t("help.approve.item1")}</li>
+                  <li>{t("help.approve.item2")}</li>
+                  <li>{t("help.approve.item3")}</li>
+                  <li>{t("help.approve.item4")}</li>
                 </ul>
                 {role !== "MANAGER" && (
                   <div className="rounded-md border bg-muted/40 p-3">
-                    Head còn duyệt thêm các <b>Flex Time Makeup</b> của nhân
-                    viên trong phòng.
+                    {t("help.approve.headNote")}
                   </div>
                 )}
               </CardContent>
@@ -362,31 +265,23 @@ export default async function HelpPage() {
           </TabsContent>
         )}
 
-        {/* BÁO CÁO */}
+        {/* REPORTS */}
         {(role === "MANAGER" || role === "HEAD" || role === "ADMIN") && (
           <TabsContent value="reports" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="size-5" /> Báo cáo
+                  <BarChart3 className="size-5" /> {t("help.reports.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p>
-                  Mục <b>Reports</b> cung cấp 3 khung thời gian:
-                </p>
+                <p>{t("help.reports.desc")}</p>
                 <ul className="ml-4 list-disc space-y-1">
-                  <li>
-                    <b>Daily</b>: ai đang nghỉ hôm nay
-                  </li>
-                  <li>
-                    <b>Weekly</b>: biểu đồ số giờ nghỉ theo ngày
-                  </li>
-                  <li>
-                    <b>Monthly</b>: tổng hợp phép, OT, flex theo nhân viên
-                  </li>
+                  <li>{t("help.reports.daily")}</li>
+                  <li>{t("help.reports.weekly")}</li>
+                  <li>{t("help.reports.monthly")}</li>
                 </ul>
-                <p>Có thể lọc theo phòng ban (với Head/Admin) và xuất CSV.</p>
+                <p>{t("help.reports.filterNote")}</p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -398,26 +293,15 @@ export default async function HelpPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="size-5" /> Quản trị
+                  <Users className="size-5" /> {t("help.admin.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <ul className="ml-4 list-disc space-y-2">
-                  <li>
-                    <b>Employees</b>: thêm/sửa/xoá nhân viên, đổi role, đổi
-                    manager, reset mật khẩu.
-                  </li>
-                  <li>
-                    <b>Holidays</b>: cấu hình ngày lễ theo năm. Ảnh hưởng tới
-                    tính giờ nghỉ & hệ số OT.
-                  </li>
-                  <li>
-                    <b>Friday Override</b>: cấu hình tuần nào thứ 6 làm như ngày thường (8h thay vì 7h).
-                  </li>
-                  <li>
-                    Khi tạo nhân viên mới, hệ thống tự cấp quỹ phép 96 giờ cho
-                    chu kỳ hiện tại.
-                  </li>
+                  <li>{t("help.admin.itemEmployees")}</li>
+                  <li>{t("help.admin.itemHolidays")}</li>
+                  <li>{t("help.admin.itemFridayOverride")}</li>
+                  <li>{t("help.admin.newEmployeeNote")}</li>
                 </ul>
               </CardContent>
             </Card>
@@ -428,55 +312,32 @@ export default async function HelpPage() {
         <TabsContent value="faq" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Câu hỏi thường gặp</CardTitle>
+              <CardTitle>{t("help.faq.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <Faq q="Nghỉ nửa buổi sáng thì ghi thế nào?">
-                Tạo đơn với giờ bắt đầu = giờ vào ca, giờ kết thúc = 12:00 (nghỉ trưa).
-              </Faq>
-              <Faq q="OT bank chu kỳ cũ chưa dùng hết có mất không?">
-                Có grace period 2 tháng (đến 31/07 năm sau) để dùng OT đổi ngày nghỉ. Sau đó OT bank hết hạn.
-              </Faq>
-              <Faq q="Tôi quên bấm Submit, sếp không thấy đơn?">
-                Đơn DRAFT chỉ mình bạn thấy. Vào chi tiết đơn → <b>Submit</b>{" "}
-                để gửi duyệt.
-              </Faq>
-              <Faq q="Tôi đổi ý muốn huỷ đơn đã duyệt?">
-                Mở đơn đã duyệt → <b>Request Cancel</b>. Manager/Head sẽ duyệt
-                lại. Nếu OK, giờ phép sẽ được hoàn.
-              </Faq>
-              <Faq q="Flex Time khác nghỉ phép như thế nào?">
-                Nghỉ phép = trừ quỹ phép năm. Flex = thiếu giờ tạm thời, phải
-                bù trong tháng, nếu không bù kịp mới bị trừ phép khi kết toán
-                cuối tháng.
-              </Faq>
-              <Faq q="Tôi là Manager, tự xin nghỉ thì ai duyệt?">
-                Đơn của bạn sẽ chuyển thẳng lên Head duyệt (không tự duyệt
-                được).
-              </Faq>
-              <Faq q="Không đăng nhập được?">
-                Dùng đúng email công ty + mật khẩu. Nếu quên, liên hệ Admin reset.
-              </Faq>
-              <Faq q="Bonus thâm niên tính thế nào?">
-                Mỗi 5 năm được +8h (1 ngày). Mốc tính bắt đầu từ 01/06 của năm vào làm (có lợi cho nhân viên). Ví dụ: vào 15/03/2020 → mốc = 01/06/2019 → đến 01/06/2024 được +8h bonus.
-              </Faq>
-              <Faq q="Filter đơn nghỉ phép hoạt động thế nào?">
-                Filter theo khoảng ngày sẽ hiện tất cả đơn có ngày nghỉ chồng lấn với khoảng đó. Ví dụ: filter 15-20/5 sẽ hiện đơn nghỉ 10-17/5 (chồng) nhưng không hiện đơn 10-14/5 (không chồng).
-              </Faq>
+              <Faq q={t("help.faq.q1")}>{t("help.faq.a1")}</Faq>
+              <Faq q={t("help.faq.q2")}>{t("help.faq.a2")}</Faq>
+              <Faq q={t("help.faq.q3")}>{t("help.faq.a3")}</Faq>
+              <Faq q={t("help.faq.q4")}>{t("help.faq.a4")}</Faq>
+              <Faq q={t("help.faq.q5")}>{t("help.faq.a5")}</Faq>
+              <Faq q={t("help.faq.q6")}>{t("help.faq.a6")}</Faq>
+              <Faq q={t("help.faq.q7")}>{t("help.faq.a7")}</Faq>
+              <Faq q={t("help.faq.q8")}>{t("help.faq.a8")}</Faq>
+              <Faq q={t("help.faq.q9")}>{t("help.faq.a9")}</Faq>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="size-5" /> Hỗ trợ
+                <ShieldCheck className="size-5" /> {t("help.faq.supportTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-2">
-              <p>Khi cần hỗ trợ, liên hệ:</p>
+              <p>{t("help.faq.supportDesc")}</p>
               <ul className="ml-4 list-disc">
-                <li>Quản trị hệ thống (Admin) qua email nội bộ</li>
-                <li>Trưởng bộ phận (Head) cho các vấn đề duyệt đơn</li>
+                <li>{t("help.faq.supportAdmin")}</li>
+                <li>{t("help.faq.supportHead")}</li>
               </ul>
             </CardContent>
           </Card>

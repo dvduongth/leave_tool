@@ -101,6 +101,10 @@ export default function LeaveDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
+  // Date picker popover state
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
+
   // Edit form state
   const [editStartDate, setEditStartDate] = useState<Date | undefined>();
   const [editStartTime, setEditStartTime] = useState("");
@@ -338,7 +342,7 @@ export default function LeaveDetailPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t("newLeave.startDate")}</Label>
-                <Popover>
+                <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                   <PopoverTrigger
                     className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
                   >
@@ -353,7 +357,10 @@ export default function LeaveDetailPage() {
                     <Calendar
                       mode="single"
                       selected={editStartDate}
-                      onSelect={(date) => setEditStartDate(date ?? undefined)}
+                      onSelect={(date) => {
+                        setEditStartDate(date ?? undefined);
+                        setStartDateOpen(false);
+                      }}
                       disabled={(date) => {
                         const day = date.getDay();
                         return day === 0 || day === 6;
@@ -384,7 +391,7 @@ export default function LeaveDetailPage() {
 
               <div className="space-y-2">
                 <Label>Ngày kết thúc</Label>
-                <Popover>
+                <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                   <PopoverTrigger
                     className="flex h-8 w-full items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm hover:bg-muted"
                   >
@@ -399,7 +406,10 @@ export default function LeaveDetailPage() {
                     <Calendar
                       mode="single"
                       selected={editEndDate}
-                      onSelect={(date) => setEditEndDate(date ?? undefined)}
+                      onSelect={(date) => {
+                        setEditEndDate(date ?? undefined);
+                        setEndDateOpen(false);
+                      }}
                       disabled={(date) => {
                         const day = date.getDay();
                         const beforeStart = editStartDate ? date < editStartDate : false;

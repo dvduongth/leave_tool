@@ -60,7 +60,21 @@ interface PendingOT {
   };
 }
 
-type RejectMode = "leave" | "cancel" | "ot-cancel";
+interface PendingMenstrual {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  mode: string;
+  note: string | null;
+  status: string;
+  employee: {
+    name: string;
+    email: string;
+  };
+}
+
+type RejectMode = "leave" | "cancel" | "ot-cancel" | "menstrual";
 
 export default function ApprovalsPage() {
   const t = useT();
@@ -70,6 +84,7 @@ export default function ApprovalsPage() {
   const [leaves, setLeaves] = useState<PendingLeave[]>([]);
   const [cancelRequests, setCancelRequests] = useState<PendingLeave[]>([]);
   const [otCancelRequests, setOtCancelRequests] = useState<PendingOT[]>([]);
+  const [menstrualRequests, setMenstrualRequests] = useState<PendingMenstrual[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -83,15 +98,17 @@ export default function ApprovalsPage() {
       const status =
         role === "HEAD" || role === "ADMIN" ? "PENDING_HEAD" : "PENDING_MANAGER";
 
-      const [leavesRes, cancelsRes, otCancelsRes] = await Promise.all([
+      const [leavesRes, cancelsRes, otCancelsRes, menstrualRes] = await Promise.all([
         fetch(`/api/leaves?status=${status}`),
         fetch(`/api/leaves?status=CANCEL_PENDING`),
         fetch(`/api/ot?status=CANCEL_PENDING`),
+        fetch(`/api/menstrual-leave/pending?status=${status}`),
       ]);
 
       if (leavesRes.ok) setLeaves(await leavesRes.json());
       if (cancelsRes.ok) setCancelRequests(await cancelsRes.json());
       if (otCancelsRes.ok) setOtCancelRequests(await otCancelsRes.json());
+      if (menstrualRes.ok) setMenstrualRequests(await menstrualRes.json());
     } finally {
       setLoading(false);
     }
@@ -155,6 +172,26 @@ export default function ApprovalsPage() {
     }
   }
 
+  async function handleApproveMenstrual(id: string) {
+    setProcessingId(id);
+    try {
+      const res = await fetch(`/api/menstrual-leave/${id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || t("approvals.errApprove"));
+        return;
+      }
+      toast.success(t("approvals.toastApproved"));
+      setMenstrualRequests((prev) => prev.filter((m) => m.id !== id));
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
   function openRejectDialog(leaveId: string, mode: RejectMode) {
     setRejectTargetId(leaveId);
     setRejectMode(mode);
@@ -172,18 +209,26 @@ export default function ApprovalsPage() {
     setProcessingId(rejectTargetId);
     try {
       let endpoint: string;
+      let bodyKey = "comment";
       if (rejectMode === "ot-cancel") {
         endpoint = `/api/ot/${rejectTargetId}/reject-cancel`;
       } else if (rejectMode === "cancel") {
         endpoint = `/api/leaves/${rejectTargetId}/reject-cancel`;
+      } else if (rejectMode === "menstrual") {
+        endpoint = `/api/menstrual-leave/${rejectTargetId}/approve`;
+        bodyKey = "reason";
       } else {
         endpoint = `/api/leaves/${rejectTargetId}/reject`;
       }
 
+      const body = rejectMode === "menstrual"
+        ? { action: "reject", reason: rejectComment }
+        : { comment: rejectComment };
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: rejectComment }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -197,6 +242,9 @@ export default function ApprovalsPage() {
       } else if (rejectMode === "cancel") {
         toast.success(t("approvals.toastCancelRejected"));
         setCancelRequests((prev) => prev.filter((l) => l.id !== rejectTargetId));
+      } else if (rejectMode === "menstrual") {
+        toast.success(t("approvals.toastRejected"));
+        setMenstrualRequests((prev) => prev.filter((m) => m.id !== rejectTargetId));
       } else {
         toast.success(t("approvals.toastRejected"));
         setLeaves((prev) => prev.filter((l) => l.id !== rejectTargetId));
@@ -390,7 +438,70 @@ export default function ApprovalsPage() {
     </Card>
   );
 
-  const nothingPending = leaves.length === 0 && cancelRequests.length === 0 && otCancelRequests.length === 0;
+  const nothingPending = leaves.length === 0 && cancelRequests.length === 0 && otCancelRequests.length === 0 && menstrualRequests.length === 0;
+
+  const renderMenstrualCard = (m: PendingMenstrual) => (
+    <Card key={m.id}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <User className="size-4" />
+              {m.employee.name}
+            </CardTitle>
+            <CardDescription>{m.employee.email}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.date")}</p>
+            <p className="text-sm font-medium">
+              {format(new Date(m.date), "MMM d, yyyy")}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.time")}</p>
+            <p className="text-sm font-medium">
+              {m.startTime} - {m.endTime}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Mode</p>
+            <p className="text-sm font-medium">{m.mode}</p>
+          </div>
+        </div>
+
+        {m.note && (
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.note")}</p>
+            <p className="mt-1 rounded bg-muted/50 p-2 text-sm">{m.note}</p>
+          </div>
+        )}
+
+        <Separator />
+
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="outline"
+            disabled={processingId === m.id}
+            onClick={() => openRejectDialog(m.id, "menstrual")}
+          >
+            <XCircle className="size-4" data-icon="inline-start" />
+            {t("common.reject")}
+          </Button>
+          <Button
+            disabled={processingId === m.id}
+            onClick={() => handleApproveMenstrual(m.id)}
+          >
+            <CheckCircle className="size-4" data-icon="inline-start" />
+            {t("common.approve")}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -440,6 +551,16 @@ export default function ApprovalsPage() {
               </h2>
               <div className="grid gap-4">
                 {otCancelRequests.map((ot) => renderOtCancelCard(ot))}
+              </div>
+            </div>
+          )}
+          {menstrualRequests.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">
+                Wellness ({menstrualRequests.length})
+              </h2>
+              <div className="grid gap-4">
+                {menstrualRequests.map((m) => renderMenstrualCard(m))}
               </div>
             </div>
           )}

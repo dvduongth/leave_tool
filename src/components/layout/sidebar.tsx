@@ -21,6 +21,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
+import {
+  preloadDashboard,
+  preloadLeaves,
+  preloadOT,
+  preloadFlexTime,
+  preloadWellness,
+  preloadReports,
+} from "@/lib/swr";
 import type { Role, Gender } from "@/generated/prisma";
 
 interface NavItem {
@@ -30,6 +38,15 @@ interface NavItem {
   roles?: Role[];
   femaleOnly?: boolean;
 }
+
+const prefetchMap: Record<string, () => void> = {
+  "/": preloadDashboard,
+  "/leaves": preloadLeaves,
+  "/ot": preloadOT,
+  "/flex-time": preloadFlexTime,
+  "/wellness": preloadWellness,
+  "/reports": () => preloadReports("leave_summary"),
+};
 
 const navItems: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
@@ -99,10 +116,12 @@ export function Sidebar({ role, gender = "UNSPECIFIED" }: SidebarProps) {
       <nav className="flex-1 space-y-1 p-3">
         {visibleItems.map((item) => {
           const Icon = item.icon;
+          const prefetch = prefetchMap[item.href];
           return (
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={prefetch}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive(item.href)
@@ -125,10 +144,12 @@ export function Sidebar({ role, gender = "UNSPECIFIED" }: SidebarProps) {
             </div>
             {adminItems.map((item) => {
               const Icon = item.icon;
+              const prefetch = prefetchMap[item.href];
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  onMouseEnter={prefetch}
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                     isActive(item.href)

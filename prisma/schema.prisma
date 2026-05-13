@@ -73,6 +73,13 @@ enum MenstrualMode {
   LONG
 }
 
+enum MenstrualStatus {
+  PENDING_MANAGER
+  PENDING_HEAD
+  APPROVED
+  REJECTED
+}
+
 model Department {
   id        String     @id @default(uuid())
   name      String
@@ -297,19 +304,21 @@ model Holiday {
 }
 
 model MenstrualLeave {
-  id         String        @id @default(uuid())
-  employeeId String        @map("employee_id")
-  date       DateTime      @db.Date
-  startTime  String        @map("start_time")
-  endTime    String        @map("end_time")
-  mode       MenstrualMode @default(SHORT)
+  id         String          @id @default(uuid())
+  employeeId String          @map("employee_id")
+  date       DateTime        @db.Date
+  startTime  String          @map("start_time")
+  endTime    String          @map("end_time")
+  mode       MenstrualMode   @default(SHORT)
+  status     MenstrualStatus @default(PENDING_MANAGER)
   note       String?
-  createdAt  DateTime      @default(now()) @map("created_at")
+  createdAt  DateTime        @default(now()) @map("created_at")
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@unique([employeeId, date])
   @@index([employeeId, date])
+  @@index([status])
   @@map("menstrual_leaves")
 }
 
