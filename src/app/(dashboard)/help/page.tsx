@@ -55,6 +55,7 @@ export default async function HelpPage() {
           <TabsTrigger value="leave">Xin nghỉ phép</TabsTrigger>
           <TabsTrigger value="ot">Ghi OT</TabsTrigger>
           <TabsTrigger value="flex">Flex Time</TabsTrigger>
+          <TabsTrigger value="wellness">Wellness</TabsTrigger>
           {(role === "MANAGER" || role === "HEAD" || role === "ADMIN") && (
             <TabsTrigger value="approve">Duyệt đơn</TabsTrigger>
           )}
@@ -89,7 +90,7 @@ export default async function HelpPage() {
                 <FeatureBox
                   icon={Clock}
                   title="OT"
-                  text="Ghi lại giờ làm thêm ngày thường / cuối tuần / lễ với hệ số lương tương ứng"
+                  text="Ghi giờ làm thêm, đổi thành ngày nghỉ (OT bank) hoặc tiền (hệ số theo loại ngày)"
                 />
                 <FeatureBox
                   icon={Timer}
@@ -139,16 +140,20 @@ export default async function HelpPage() {
                 desc="Chu kỳ phép năm từ 01/06 → 31/05 năm sau. Mỗi nhân viên được cấp 96 giờ (12 ngày)."
               />
               <Concept
-                term="Grace period"
-                desc="2 tháng sau khi kết thúc chu kỳ (đến 31/07), vẫn được dùng phép của chu kỳ cũ nếu chưa hết."
+                term="Grace period (OT bank)"
+                desc="Nếu dùng OT đổi thành ngày nghỉ, 2 tháng sau khi kết thúc chu kỳ (đến 31/07) vẫn được dùng OT bank của chu kỳ cũ nếu chưa hết."
+              />
+              <Concept
+                term="Thâm niên (Seniority)"
+                desc="Mỗi 5 năm được +8h (1 ngày). Mốc tính từ 01/06 của năm vào làm (có lợi cho nhân viên)."
               />
               <Concept
                 term="Ca làm việc (Shift)"
-                desc="A (7:00-17:00), B (7:30-17:30), C (9:00-19:00). Thứ 6 nghỉ sớm 1 giờ."
+                desc="A (7:00-17:00), B (7:30-17:30), C (9:00-19:00), D (8:00-18:00). Thứ 6 nghỉ sớm 1h. Đã trừ 1h nghỉ trưa → 8h weekday, 7h friday."
               />
               <Concept
                 term="Giờ nghỉ hợp lệ"
-                desc="Chỉ tính trong giờ hành chính của ca, trừ 1 giờ nghỉ trưa. Không tính cuối tuần, ngày lễ."
+                desc="Chỉ tính trong giờ hành chính của ca, trừ 1 giờ nghỉ trưa 12:00-13:00. Không tính cuối tuần, ngày lễ."
               />
             </CardContent>
           </Card>
@@ -238,7 +243,7 @@ export default async function HelpPage() {
                 </li>
               </ul>
               <p>
-                Bản ghi OT dùng cho báo cáo lương; không trừ/cộng vào quỹ phép.
+                OT có thể đổi thành <b>ngày nghỉ</b> (tích lũy vào OT bank, dùng bù khi xin nghỉ phép) hoặc <b>tiền</b> (theo hệ số trên).
               </p>
             </CardContent>
           </Card>
@@ -275,6 +280,41 @@ export default async function HelpPage() {
                   <div>
                     Trước ngày 25 hàng tháng, hệ thống gửi cảnh báo nếu bạn còn
                     nợ giờ.
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* WELLNESS (Nghỉ đèn đỏ) */}
+        <TabsContent value="wellness" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="size-5" /> Nghỉ đèn đỏ (Wellness)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p>
+                Áp dụng cho <b>nhân viên nữ</b>. Mỗi tháng được nghỉ tối đa <b>1.5 giờ</b>.
+              </p>
+              <Step n={1} title="Đăng ký nghỉ">
+                Vào <b>Wellness</b> → chọn ngày + giờ bắt đầu + thời lượng:
+              </Step>
+              <ul className="ml-10 list-disc space-y-1">
+                <li><b>Ngắn</b>: 30 phút</li>
+                <li><b>Trung bình</b>: 1 giờ (60 phút)</li>
+                <li><b>Dài</b>: 1.5 giờ (90 phút)</li>
+              </ul>
+              <Step n={2} title="Tự động tính giờ kết thúc">
+                Hệ thống tự tính giờ kết thúc dựa trên thời lượng đã chọn.
+              </Step>
+              <div className="rounded-md border bg-muted/40 p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="size-4 text-primary mt-0.5" />
+                  <div>
+                    Không cần duyệt, không trừ phép. Chỉ nhân viên có giới tính FEMALE mới thấy mục này trong sidebar.
                   </div>
                 </div>
               </div>
@@ -372,6 +412,9 @@ export default async function HelpPage() {
                     tính giờ nghỉ & hệ số OT.
                   </li>
                   <li>
+                    <b>Friday Override</b>: cấu hình tuần nào thứ 6 làm như ngày thường (8h thay vì 7h).
+                  </li>
+                  <li>
                     Khi tạo nhân viên mới, hệ thống tự cấp quỹ phép 96 giờ cho
                     chu kỳ hiện tại.
                   </li>
@@ -388,13 +431,11 @@ export default async function HelpPage() {
               <CardTitle>Câu hỏi thường gặp</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <Faq q="Tôi nghỉ nửa buổi sáng thì ghi thế nào?">
-                Tạo đơn nghỉ phép, nhập giờ bắt đầu = giờ vào ca, số giờ = 4.
-                Hệ thống tự tính giờ kết thúc.
+              <Faq q="Nghỉ nửa buổi sáng thì ghi thế nào?">
+                Tạo đơn với giờ bắt đầu = giờ vào ca, giờ kết thúc = 12:00 (nghỉ trưa).
               </Faq>
-              <Faq q="Phép chu kỳ cũ tôi chưa dùng hết có mất không?">
-                Bạn còn 2 tháng grace period (đến 31/07 năm sau). Sau đó phần
-                chưa dùng bị xoá.
+              <Faq q="OT bank chu kỳ cũ chưa dùng hết có mất không?">
+                Có grace period 2 tháng (đến 31/07 năm sau) để dùng OT đổi ngày nghỉ. Sau đó OT bank hết hạn.
               </Faq>
               <Faq q="Tôi quên bấm Submit, sếp không thấy đơn?">
                 Đơn DRAFT chỉ mình bạn thấy. Vào chi tiết đơn → <b>Submit</b>{" "}
@@ -414,8 +455,13 @@ export default async function HelpPage() {
                 được).
               </Faq>
               <Faq q="Không đăng nhập được?">
-                Dùng đúng email công ty + mật khẩu. Nếu quên, liên hệ Admin
-                reset.
+                Dùng đúng email công ty + mật khẩu. Nếu quên, liên hệ Admin reset.
+              </Faq>
+              <Faq q="Bonus thâm niên tính thế nào?">
+                Mỗi 5 năm được +8h (1 ngày). Mốc tính bắt đầu từ 01/06 của năm vào làm (có lợi cho nhân viên). Ví dụ: vào 15/03/2020 → mốc = 01/06/2019 → đến 01/06/2024 được +8h bonus.
+              </Faq>
+              <Faq q="Filter đơn nghỉ phép hoạt động thế nào?">
+                Filter theo khoảng ngày sẽ hiện tất cả đơn có ngày nghỉ chồng lấn với khoảng đó. Ví dụ: filter 15-20/5 sẽ hiện đơn nghỉ 10-17/5 (chồng) nhưng không hiện đơn 10-14/5 (không chồng).
               </Faq>
             </CardContent>
           </Card>
