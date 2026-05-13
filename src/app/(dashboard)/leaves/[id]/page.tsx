@@ -144,9 +144,9 @@ export default function LeaveDetailPage() {
   useEffect(() => {
     if (!editing || !editStartDate || !editEndDate || !editStartTime || !editEndTime) return;
     const params = new URLSearchParams({
-      startDate: editStartDate.toISOString(),
+      startDate: format(editStartDate, 'yyyy-MM-dd'),
       startTime: editStartTime,
-      endDate: editEndDate.toISOString(),
+      endDate: format(editEndDate, 'yyyy-MM-dd'),
       endTime: editEndTime,
     });
     fetch(`/api/leaves/preview?${params.toString()}`)
@@ -170,9 +170,9 @@ export default function LeaveDetailPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startDate: editStartDate.toISOString(),
+          startDate: format(editStartDate, 'yyyy-MM-dd'),
           startTime: editStartTime,
-          endDate: editEndDate?.toISOString(),
+          endDate: editEndDate ? format(editEndDate, 'yyyy-MM-dd') : undefined,
           endTime: editEndTime,
           reason: editReason.trim() || undefined,
         }),
@@ -250,9 +250,9 @@ export default function LeaveDetailPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startDate: editStartDate.toISOString(),
+          startDate: format(editStartDate, 'yyyy-MM-dd'),
           startTime: editStartTime,
-          endDate: editEndDate?.toISOString(),
+          endDate: editEndDate ? format(editEndDate, 'yyyy-MM-dd') : undefined,
           endTime: editEndTime,
           reason: editReason.trim() || undefined,
         }),

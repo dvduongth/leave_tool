@@ -61,8 +61,8 @@ export default function LeavesPage() {
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "ALL") params.set("status", statusFilter);
-      if (dateFrom) params.set("from", dateFrom.toISOString());
-      if (dateTo) params.set("to", dateTo.toISOString());
+      if (dateFrom) params.set("from", format(dateFrom, 'yyyy-MM-dd'));
+      if (dateTo) params.set("to", format(dateTo, 'yyyy-MM-dd'));
 
       const res = await fetch(`/api/leaves?${params.toString()}`);
       if (res.ok) {

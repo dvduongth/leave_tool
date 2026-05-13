@@ -165,7 +165,7 @@ export default function FlexTimePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: dialogType,
-          date: formDate.toISOString(),
+          date: format(formDate, 'yyyy-MM-dd'),
           minutes,
           reason: formReason.trim(),
         }),

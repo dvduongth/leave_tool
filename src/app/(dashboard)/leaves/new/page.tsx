@@ -90,8 +90,8 @@ export default function NewLeavePage() {
       setPreviewError(null);
       return;
     }
-    const sIso = startDate.toISOString();
-    const eIso = endDate.toISOString();
+    const sIso = format(startDate, 'yyyy-MM-dd');
+    const eIso = format(endDate, 'yyyy-MM-dd');
     const params = new URLSearchParams({
       startDate: sIso,
       startTime,
@@ -139,9 +139,9 @@ export default function NewLeavePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startDate: startDate.toISOString(),
+          startDate: format(startDate, 'yyyy-MM-dd'),
           startTime,
-          endDate: endDate.toISOString(),
+          endDate: format(endDate, 'yyyy-MM-dd'),
           endTime,
           reason: reason.trim(),
         }),

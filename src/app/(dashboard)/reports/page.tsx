@@ -123,7 +123,7 @@ export default function ReportsPage() {
   useEffect(() => {
     // We derive departments from the monthly report or just show the filter
     // For simplicity, fetch a monthly report to discover departments
-    fetch(`/api/reports?type=monthly&date=${new Date().toISOString()}`)
+    fetch(`/api/reports?type=monthly&date=${format(new Date(), 'yyyy-MM-dd')}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.departments) {
@@ -143,7 +143,7 @@ export default function ReportsPage() {
     try {
       const params = new URLSearchParams({
         type: reportType,
-        date: selectedDate.toISOString(),
+        date: format(selectedDate, 'yyyy-MM-dd'),
       });
       if (departmentId !== "ALL") {
         params.set("departmentId", departmentId);
@@ -183,7 +183,7 @@ export default function ReportsPage() {
 
     const params = new URLSearchParams({
       type: reportType,
-      date: selectedDate.toISOString(),
+      date: format(selectedDate, 'yyyy-MM-dd'),
     });
     if (departmentId !== "ALL") {
       params.set("departmentId", departmentId);
