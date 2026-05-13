@@ -91,13 +91,29 @@ export async function POST(
       message: `${leave.employee.name} submitted a leave request for ${leave.totalHours}h`,
       link: `/leaves/${id}`,
     };
-    if (nextStatus === LeaveStatus.PENDING_MANAGER && leave.employee.managerId) {
-      await notifyLeaveEventFromRequest(
-        leave.employee.managerId,
-        "leave_submitted_to_approver",
-        leave,
-        approverInApp
-      );
+    if (nextStatus === LeaveStatus.PENDING_MANAGER) {
+      if (leave.employee.managerId) {
+        await notifyLeaveEventFromRequest(
+          leave.employee.managerId,
+          "leave_submitted_to_approver",
+          leave,
+          approverInApp
+        );
+      } else {
+        // No manager assigned, fallback to ADMINs
+        const admins = await prisma.employee.findMany({
+          where: { role: Role.ADMIN, id: { not: leave.employeeId } },
+          select: { id: true },
+        });
+        for (const a of admins) {
+          await notifyLeaveEventFromRequest(
+            a.id,
+            "leave_submitted_to_approver",
+            leave,
+            approverInApp
+          );
+        }
+      }
     } else if (nextStatus === LeaveStatus.PENDING_HEAD) {
       // Find department head
       const department = await prisma.department.findUnique({

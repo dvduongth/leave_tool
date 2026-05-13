@@ -168,6 +168,14 @@ export async function POST(request: NextRequest) {
     const recipients = new Set<string>();
     if (employee?.managerId) recipients.add(employee.managerId);
     else if (dept?.headId && dept.headId !== user.id) recipients.add(dept.headId);
+    // Fallback: if no manager/head, notify all ADMINs
+    if (recipients.size === 0) {
+      const admins = await prisma.employee.findMany({
+        where: { role: Role.ADMIN, id: { not: user.id } },
+        select: { id: true },
+      });
+      for (const a of admins) recipients.add(a.id);
+    }
     const dateStr = parsedDate.toISOString().slice(0, 10);
     const kindLabel = type === "DEFICIT" ? "ghi nhận thiếu giờ" : "ghi nhận bù giờ";
     for (const r of recipients) {
