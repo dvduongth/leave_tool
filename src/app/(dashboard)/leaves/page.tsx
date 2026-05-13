@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { format } from "date-fns";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -34,6 +35,7 @@ interface LeaveRow {
   status: LeaveStatus;
   createdAt: string;
   reason: string | null;
+  employee?: { id: string; name: string };
 }
 
 const STATUS_VALUES = [
@@ -50,11 +52,16 @@ const STATUS_VALUES = [
 export default function LeavesPage() {
   const router = useRouter();
   const t = useT();
+  const { data: session } = useSession();
   const [leaves, setLeaves] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [scope, setScope] = useState<"own" | "team">("own");
+
+  const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const canViewTeam = userRole === "MANAGER" || userRole === "HEAD" || userRole === "ADMIN";
 
   const fetchLeaves = useCallback(async () => {
     setLoading(true);
@@ -63,6 +70,7 @@ export default function LeavesPage() {
       if (statusFilter !== "ALL") params.set("status", statusFilter);
       if (dateFrom) params.set("from", format(dateFrom, 'yyyy-MM-dd'));
       if (dateTo) params.set("to", format(dateTo, 'yyyy-MM-dd'));
+      params.set("scope", scope);
 
       const res = await fetch(`/api/leaves?${params.toString()}`);
       if (res.ok) {
@@ -72,7 +80,7 @@ export default function LeavesPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, dateFrom, dateTo]);
+  }, [statusFilter, dateFrom, dateTo, scope]);
 
   useEffect(() => {
     fetchLeaves();
@@ -95,6 +103,30 @@ export default function LeavesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Scope toggle for Manager/Head/Admin */}
+        {canViewTeam && (
+          <div className="inline-flex rounded-lg border p-1">
+            <Button
+              variant={scope === "own" ? "secondary" : "ghost"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setScope("own")}
+            >
+              <User className="size-3.5" />
+              {t("leaves.scopeOwn")}
+            </Button>
+            <Button
+              variant={scope === "team" ? "secondary" : "ghost"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setScope("team")}
+            >
+              <Users className="size-3.5" />
+              {t("leaves.scopeTeam")}
+            </Button>
+          </div>
+        )}
+
         <Select
           value={statusFilter}
           onValueChange={(val) => setStatusFilter(val as string)}
@@ -163,6 +195,7 @@ export default function LeavesPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              {scope === "team" && <TableHead>{t("leaves.colEmployee")}</TableHead>}
               <TableHead>{t("leaves.colStartDate")}</TableHead>
               <TableHead>{t("leaves.colEndDate")}</TableHead>
               <TableHead className="text-right">{t("leaves.colHours")}</TableHead>
@@ -174,13 +207,13 @@ export default function LeavesPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={scope === "team" ? 7 : 6} className="h-24 text-center text-muted-foreground">
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : leaves.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={scope === "team" ? 7 : 6} className="h-24 text-center text-muted-foreground">
                   {t("leaves.empty")}
                 </TableCell>
               </TableRow>
@@ -191,6 +224,11 @@ export default function LeavesPage() {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => router.push(`/leaves/${leave.id}`)}
                 >
+                  {scope === "team" && (
+                    <TableCell className="font-medium">
+                      {leave.employee?.name || "-"}
+                    </TableCell>
+                  )}
                   <TableCell>
                     {format(new Date(leave.startDate), "MMM d, yyyy")}
                   </TableCell>

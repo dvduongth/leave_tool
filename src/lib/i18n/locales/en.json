@@ -203,7 +203,10 @@
     "colHours": "Hours",
     "colStatus": "Status",
     "colCreated": "Created",
-    "empty": "No leave requests found."
+    "colEmployee": "Employee",
+    "empty": "No leave requests found.",
+    "scopeOwn": "Mine",
+    "scopeTeam": "Team"
   },
   "newLeave": {
     "title": "New Leave Request",
@@ -292,12 +295,22 @@
     "toastCancelApproved": "Cancellation approved.",
     "toastCancelRejected": "Cancellation rejected. The leave remains approved.",
     "sectionNew": "New leave requests",
-    "sectionCancel": "Cancellation requests",
+    "sectionCancel": "Leave cancellation requests",
+    "sectionOtCancel": "OT cancellation requests",
     "approveCancel": "Approve cancel",
     "rejectCancel": "Reject cancel",
-    "rejectCancelTitle": "Reject cancellation request",
+    "rejectCancelTitle": "Reject leave cancellation request",
     "rejectCancelDesc": "The leave will remain approved. The employee will be notified.",
-    "cancelRequestNote": "The employee requested to cancel this leave. Approving will restore the deducted balance."
+    "rejectOtCancelTitle": "Reject OT cancellation request",
+    "rejectOtCancelDesc": "The OT will remain approved. The employee will be notified.",
+    "cancelRequestNote": "The employee requested to cancel this leave. Approving will restore the deducted balance.",
+    "otCancelRequestNote": "The employee requested to cancel this OT. Approving will restore the deducted hours.",
+    "date": "Date",
+    "time": "Time",
+    "minutes": "Minutes",
+    "note": "Note",
+    "toastOtCancelApproved": "OT cancellation approved.",
+    "toastOtCancelRejected": "OT cancellation rejected."
   },
   "ot": {
     "title": "Overtime Records",

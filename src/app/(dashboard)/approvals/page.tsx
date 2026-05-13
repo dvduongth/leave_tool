@@ -27,7 +27,7 @@ import {
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
 import { Separator } from "@/components/ui/separator";
 import { useT } from "@/lib/i18n/provider";
-import type { LeaveStatus } from "@/generated/prisma";
+import type { LeaveStatus, RecordStatus } from "@/generated/prisma";
 
 interface PendingLeave {
   id: string;
@@ -46,7 +46,21 @@ interface PendingLeave {
   };
 }
 
-type RejectMode = "leave" | "cancel";
+interface PendingOT {
+  id: string;
+  date: string;
+  otStart: string;
+  otEnd: string;
+  otMinutes: number;
+  note: string | null;
+  status: RecordStatus;
+  employee: {
+    name: string;
+    email: string;
+  };
+}
+
+type RejectMode = "leave" | "cancel" | "ot-cancel";
 
 export default function ApprovalsPage() {
   const t = useT();
@@ -55,6 +69,7 @@ export default function ApprovalsPage() {
 
   const [leaves, setLeaves] = useState<PendingLeave[]>([]);
   const [cancelRequests, setCancelRequests] = useState<PendingLeave[]>([]);
+  const [otCancelRequests, setOtCancelRequests] = useState<PendingOT[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -68,13 +83,15 @@ export default function ApprovalsPage() {
       const status =
         role === "HEAD" || role === "ADMIN" ? "PENDING_HEAD" : "PENDING_MANAGER";
 
-      const [leavesRes, cancelsRes] = await Promise.all([
+      const [leavesRes, cancelsRes, otCancelsRes] = await Promise.all([
         fetch(`/api/leaves?status=${status}`),
         fetch(`/api/leaves?status=CANCEL_PENDING`),
+        fetch(`/api/ot?status=CANCEL_PENDING`),
       ]);
 
       if (leavesRes.ok) setLeaves(await leavesRes.json());
       if (cancelsRes.ok) setCancelRequests(await cancelsRes.json());
+      if (otCancelsRes.ok) setOtCancelRequests(await otCancelsRes.json());
     } finally {
       setLoading(false);
     }
@@ -120,6 +137,24 @@ export default function ApprovalsPage() {
     }
   }
 
+  async function handleApproveOtCancel(otId: string) {
+    setProcessingId(otId);
+    try {
+      const res = await fetch(`/api/ot/${otId}/approve-cancel`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || t("approvals.errApproveCancel"));
+        return;
+      }
+      toast.success(t("approvals.toastOtCancelApproved"));
+      setOtCancelRequests((prev) => prev.filter((o) => o.id !== otId));
+    } finally {
+      setProcessingId(null);
+    }
+  }
+
   function openRejectDialog(leaveId: string, mode: RejectMode) {
     setRejectTargetId(leaveId);
     setRejectMode(mode);
@@ -136,10 +171,15 @@ export default function ApprovalsPage() {
 
     setProcessingId(rejectTargetId);
     try {
-      const endpoint =
-        rejectMode === "cancel"
-          ? `/api/leaves/${rejectTargetId}/reject-cancel`
-          : `/api/leaves/${rejectTargetId}/reject`;
+      let endpoint: string;
+      if (rejectMode === "ot-cancel") {
+        endpoint = `/api/ot/${rejectTargetId}/reject-cancel`;
+      } else if (rejectMode === "cancel") {
+        endpoint = `/api/leaves/${rejectTargetId}/reject-cancel`;
+      } else {
+        endpoint = `/api/leaves/${rejectTargetId}/reject`;
+      }
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -150,14 +190,15 @@ export default function ApprovalsPage() {
         toast.error(err.error || t("approvals.errReject"));
         return;
       }
-      toast.success(
-        rejectMode === "cancel"
-          ? t("approvals.toastCancelRejected")
-          : t("approvals.toastRejected")
-      );
-      if (rejectMode === "cancel") {
+
+      if (rejectMode === "ot-cancel") {
+        toast.success(t("approvals.toastOtCancelRejected"));
+        setOtCancelRequests((prev) => prev.filter((o) => o.id !== rejectTargetId));
+      } else if (rejectMode === "cancel") {
+        toast.success(t("approvals.toastCancelRejected"));
         setCancelRequests((prev) => prev.filter((l) => l.id !== rejectTargetId));
       } else {
+        toast.success(t("approvals.toastRejected"));
         setLeaves((prev) => prev.filter((l) => l.id !== rejectTargetId));
       }
       setRejectDialogOpen(false);
@@ -280,7 +321,76 @@ export default function ApprovalsPage() {
     </Card>
   );
 
-  const nothingPending = leaves.length === 0 && cancelRequests.length === 0;
+  const renderOtCancelCard = (ot: PendingOT) => (
+    <Card key={ot.id}>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Ban className="size-4 text-amber-600" />
+              {ot.employee.name}
+            </CardTitle>
+            <CardDescription>{ot.employee.email}</CardDescription>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            {t("common.status.CANCEL_PENDING")}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          {t("approvals.otCancelRequestNote")}
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.date")}</p>
+            <p className="text-sm font-medium">
+              {format(new Date(ot.date), "MMM d, yyyy")}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.time")}</p>
+            <p className="text-sm font-medium">
+              {ot.otStart} - {ot.otEnd}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.minutes")}</p>
+            <p className="text-sm font-medium">{ot.otMinutes} min</p>
+          </div>
+        </div>
+
+        {ot.note && (
+          <div>
+            <p className="text-xs text-muted-foreground">{t("approvals.note")}</p>
+            <p className="mt-1 rounded bg-muted/50 p-2 text-sm">{ot.note}</p>
+          </div>
+        )}
+
+        <Separator />
+
+        <div className="flex gap-2 justify-end">
+          <Button
+            variant="outline"
+            disabled={processingId === ot.id}
+            onClick={() => openRejectDialog(ot.id, "ot-cancel")}
+          >
+            <XCircle className="size-4" data-icon="inline-start" />
+            {t("approvals.rejectCancel")}
+          </Button>
+          <Button
+            disabled={processingId === ot.id}
+            onClick={() => handleApproveOtCancel(ot.id)}
+          >
+            <CheckCircle className="size-4" data-icon="inline-start" />
+            {t("approvals.approveCancel")}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const nothingPending = leaves.length === 0 && cancelRequests.length === 0 && otCancelRequests.length === 0;
 
   return (
     <div className="space-y-6">
@@ -323,6 +433,16 @@ export default function ApprovalsPage() {
               </div>
             </div>
           )}
+          {otCancelRequests.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">
+                {t("approvals.sectionOtCancel")} ({otCancelRequests.length})
+              </h2>
+              <div className="grid gap-4">
+                {otCancelRequests.map((ot) => renderOtCancelCard(ot))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -331,14 +451,18 @@ export default function ApprovalsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {rejectMode === "cancel"
-                ? t("approvals.rejectCancelTitle")
-                : t("approvals.rejectTitle")}
+              {rejectMode === "ot-cancel"
+                ? t("approvals.rejectOtCancelTitle")
+                : rejectMode === "cancel"
+                  ? t("approvals.rejectCancelTitle")
+                  : t("approvals.rejectTitle")}
             </DialogTitle>
             <DialogDescription>
-              {rejectMode === "cancel"
-                ? t("approvals.rejectCancelDesc")
-                : t("approvals.rejectDesc")}
+              {rejectMode === "ot-cancel"
+                ? t("approvals.rejectOtCancelDesc")
+                : rejectMode === "cancel"
+                  ? t("approvals.rejectCancelDesc")
+                  : t("approvals.rejectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

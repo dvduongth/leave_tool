@@ -203,7 +203,10 @@
     "colHours": "時間",
     "colStatus": "ステータス",
     "colCreated": "作成日",
-    "empty": "休暇申請が見つかりません。"
+    "colEmployee": "社員",
+    "empty": "休暇申請が見つかりません。",
+    "scopeOwn": "自分",
+    "scopeTeam": "チーム"
   },
   "newLeave": {
     "title": "新しい休暇申請",
@@ -292,12 +295,22 @@
     "toastCancelApproved": "取消を承認しました。",
     "toastCancelRejected": "取消を却下しました。休暇は承認済のままです。",
     "sectionNew": "新規休暇申請",
-    "sectionCancel": "取消申請",
+    "sectionCancel": "休暇取消申請",
+    "sectionOtCancel": "残業取消申請",
     "approveCancel": "取消を承認",
     "rejectCancel": "取消を却下",
-    "rejectCancelTitle": "取消申請を却下",
+    "rejectCancelTitle": "休暇取消申請を却下",
     "rejectCancelDesc": "休暇は承認済のままとなります。従業員に通知されます。",
-    "cancelRequestNote": "従業員がこの休暇の取消を申請しました。承認すると差引済の残高が戻ります。"
+    "rejectOtCancelTitle": "残業取消申請を却下",
+    "rejectOtCancelDesc": "残業は承認済のままとなります。従業員に通知されます。",
+    "cancelRequestNote": "従業員がこの休暇の取消を申請しました。承認すると差引済の残高が戻ります。",
+    "otCancelRequestNote": "従業員がこの残業の取消を申請しました。承認すると差引済の時間が戻ります。",
+    "date": "日付",
+    "time": "時間",
+    "minutes": "分",
+    "note": "備考",
+    "toastOtCancelApproved": "残業取消を承認しました。",
+    "toastOtCancelRejected": "残業取消を却下しました。"
   },
   "ot": {
     "title": "残業記録",

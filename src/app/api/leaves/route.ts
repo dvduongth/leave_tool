@@ -16,15 +16,17 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const employeeId = searchParams.get("employeeId");
+    const scope = searchParams.get("scope") || "own"; // "own" | "team"
 
-    // Build where clause based on role
+    // Build where clause based on role and scope
     const where: Record<string, unknown> = {};
 
     if (user.role === Role.EMPLOYEE) {
+      // Employee can only see own leaves
       where.employeeId = user.id;
     } else if (user.role === Role.MANAGER) {
       if (employeeId) {
-        // Manager can view own or direct reports
+        // Manager can view own or direct reports by specific ID
         if (employeeId !== user.id) {
           const emp = await prisma.employee.findUnique({
             where: { id: employeeId },
@@ -35,14 +37,16 @@ export async function GET(request: Request) {
           }
         }
         where.employeeId = employeeId;
-      } else {
-        // Show own + direct reports
+      } else if (scope === "team") {
+        // Show only direct reports (not self)
         const subordinates = await prisma.employee.findMany({
           where: { managerId: user.id },
           select: { id: true },
         });
-        const ids = [user.id, ...subordinates.map((s) => s.id)];
-        where.employeeId = { in: ids };
+        where.employeeId = { in: subordinates.map((s) => s.id) };
+      } else {
+        // scope === "own" (default): show only own leaves
+        where.employeeId = user.id;
       }
     } else if (user.role === Role.HEAD) {
       if (employeeId) {
@@ -56,18 +60,28 @@ export async function GET(request: Request) {
           }
         }
         where.employeeId = employeeId;
-      } else {
-        // Show own + department
+      } else if (scope === "team") {
+        // Show department members (excluding self)
         const deptEmployees = await prisma.employee.findMany({
-          where: { departmentId: user.departmentId },
+          where: { departmentId: user.departmentId, id: { not: user.id } },
           select: { id: true },
         });
         where.employeeId = { in: deptEmployees.map((e) => e.id) };
+      } else {
+        // scope === "own" (default): show only own leaves
+        where.employeeId = user.id;
       }
     }
-    // ADMIN: default to own leaves; explicit employeeId lets them view anyone.
+    // ADMIN: default to own leaves; explicit employeeId lets them view anyone; scope=team shows all
     else if (user.role === Role.ADMIN) {
-      where.employeeId = employeeId || user.id;
+      if (employeeId) {
+        where.employeeId = employeeId;
+      } else if (scope === "team") {
+        // Show all employees except self
+        where.employeeId = { not: user.id };
+      } else {
+        where.employeeId = user.id;
+      }
     }
 
     if (status) {

@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-utils";
 import { calculateOTMinutes } from "@/lib/ot-calculator";
 import { createNotification } from "@/lib/notifications";
-import { Role } from "@/generated/prisma";
+import { Role, RecordStatus } from "@/generated/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const month = searchParams.get("month"); // YYYY-MM
     const employeeId = searchParams.get("employeeId");
+    const status = searchParams.get("status") as RecordStatus | null;
 
     // Build date filter
     const dateFilter: { gte?: Date; lt?: Date } = {};
@@ -23,7 +24,18 @@ export async function GET(request: NextRequest) {
     // Build employee filter based on role
     let employeeFilter: { employeeId?: string; employee?: object } = {};
 
-    if (user.role === Role.ADMIN) {
+    // For CANCEL_PENDING status, managers/heads/admins see subordinates' requests
+    if (status === RecordStatus.CANCEL_PENDING) {
+      if (user.role === Role.ADMIN) {
+        // Admin sees all cancel requests
+      } else if (user.role === Role.HEAD) {
+        employeeFilter.employee = { departmentId: user.departmentId };
+      } else if (user.role === Role.MANAGER) {
+        employeeFilter.employee = { managerId: user.id };
+      } else {
+        employeeFilter.employeeId = user.id;
+      }
+    } else if (user.role === Role.ADMIN) {
       if (employeeId) employeeFilter.employeeId = employeeId;
     } else if (user.role === Role.HEAD) {
       if (employeeId) {
@@ -53,9 +65,10 @@ export async function GET(request: NextRequest) {
       where: {
         ...employeeFilter,
         ...(dateFilter.gte ? { date: dateFilter } : {}),
+        ...(status ? { status } : {}),
       },
       include: {
-        employee: { select: { id: true, name: true } },
+        employee: { select: { id: true, name: true, email: true } },
       },
       orderBy: { date: "desc" },
     });

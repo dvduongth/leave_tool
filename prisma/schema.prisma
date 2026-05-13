@@ -47,6 +47,8 @@ enum RecordStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCEL_PENDING
+  CANCELLED
 }
 
 enum FlexType {
