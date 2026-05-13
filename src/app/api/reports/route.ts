@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth-utils";
 import {
   getDailyReport,
+  getMonthlyDetailReport,
   getMonthlyReport,
   getVisibleEmployeeIds,
   getWeeklyReport,
@@ -34,6 +35,8 @@ export async function GET(request: Request) {
       payload = await getWeeklyReport(queryDate, employeeFilter);
     } else if (type === "monthly") {
       payload = await getMonthlyReport(queryDate, employeeFilter, user.role);
+    } else if (type === "monthly-detail") {
+      payload = await getMonthlyDetailReport(queryDate, employeeFilter);
     } else {
       return Response.json({ error: "Invalid report type" }, { status: 400 });
     }

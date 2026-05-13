@@ -2,9 +2,11 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import {
   AnyReport,
   DailyReport,
+  MonthlyDetailReport,
   MonthlyReport,
   WeeklyReport,
   getDailyReport,
+  getMonthlyDetailReport,
   getMonthlyReport,
   getVisibleEmployeeIds,
   getWeeklyReport,
@@ -168,9 +170,50 @@ function buildMonthlyCsv(d: MonthlyReport, t: T): string {
   return lines.join("\r\n");
 }
 
+function buildMonthlyDetailCsv(d: MonthlyDetailReport, t: T): string {
+  const lines: string[] = [];
+  lines.push(csvRow([t("reports.monthlyDetail"), d.month]));
+  lines.push("");
+  lines.push(
+    csvRow([
+      t("reports.colEmployee"),
+      t("reports.colLeaveHours"),
+      t("reports.colOtMinutes"),
+      t("reports.colFlexRemaining"),
+      t("reports.colMenstrualDays"),
+      t("reports.colMenstrualMinutes"),
+    ])
+  );
+  for (const emp of d.employees) {
+    lines.push(
+      csvRow([
+        emp.name,
+        emp.leaveHours,
+        emp.otMinutes,
+        emp.flexRemaining,
+        emp.menstrualDays,
+        emp.menstrualMinutes,
+      ])
+    );
+  }
+  lines.push("");
+  lines.push(
+    csvRow([
+      t("reports.csvSummary"),
+      d.totals.leaveHours,
+      d.totals.otMinutes,
+      "",
+      d.totals.menstrualDays,
+      "",
+    ])
+  );
+  return lines.join("\r\n");
+}
+
 function buildCsv(report: AnyReport, t: T): string {
   if (report.type === "daily") return buildDailyCsv(report, t);
   if (report.type === "weekly") return buildWeeklyCsv(report, t);
+  if (report.type === "monthly-detail") return buildMonthlyDetailCsv(report, t);
   return buildMonthlyCsv(report, t);
 }
 
@@ -232,6 +275,8 @@ export async function GET(request: Request) {
       report = await getWeeklyReport(queryDate, employeeFilter);
     } else if (type === "monthly") {
       report = await getMonthlyReport(queryDate, employeeFilter, user.role);
+    } else if (type === "monthly-detail") {
+      report = await getMonthlyDetailReport(queryDate, employeeFilter);
     } else {
       return Response.json({ error: "Invalid report type" }, { status: 400 });
     }

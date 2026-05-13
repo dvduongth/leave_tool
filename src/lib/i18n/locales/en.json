@@ -49,8 +49,11 @@
     "dialogTitle": "Record wellness break",
     "dialogDesc": "A {mins}-minute break, auto-approved.",
     "fieldDate": "Date",
+    "fieldMode": "Duration",
     "fieldStart": "Start time",
     "fieldNote": "Note",
+    "modeShort": "Short break (30 min)",
+    "modeLong": "1.5 hours (90 min)",
     "endAutoHint": "Will end at {end} (+{mins} min).",
     "onlyFemale": "This feature is only available to female employees.",
     "errLoad": "Failed to load data",
@@ -114,6 +117,8 @@
     "goBack": "Go Back",
     "none": "None",
     "optional": "(optional)",
+    "allMembers": "All members",
+    "selectMember": "Select member",
     "status": {
       "DRAFT": "Draft",
       "PENDING_MANAGER": "Pending Manager",
@@ -442,7 +447,12 @@
     "csvApprovalRatePct": "Approval Rate (%)",
     "csvUncompensatedByDept": "Uncompensated Flex Deficit (by Department)",
     "exportPromptFilename": "Enter CSV filename:",
-    "exportDefaultFilename": "report.csv"
+    "exportDefaultFilename": "report.csv",
+    "monthlyDetail": "Monthly Detail",
+    "colFlexRemaining": "Flex Remaining (min)",
+    "colMenstrualDays": "Menstrual Days",
+    "colMenstrualMinutes": "Menstrual Minutes",
+    "tabMonthlyDetail": "Detail"
   },
   "admin": {
     "employees": {

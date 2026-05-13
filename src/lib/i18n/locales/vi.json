@@ -49,8 +49,11 @@
     "dialogTitle": "Ghi nhận nghỉ",
     "dialogDesc": "Nghỉ ngắn {mins} phút trong ngày, tự động được chấp thuận.",
     "fieldDate": "Ngày",
+    "fieldMode": "Thời lượng",
     "fieldStart": "Giờ bắt đầu",
     "fieldNote": "Ghi chú",
+    "modeShort": "Nghỉ ngắn (30 phút)",
+    "modeLong": "Nghỉ 1.5 giờ (90 phút)",
     "endAutoHint": "Sẽ kết thúc lúc {end} (+{mins} phút).",
     "onlyFemale": "Chức năng này chỉ dành cho nhân viên nữ.",
     "errLoad": "Không tải được dữ liệu",
@@ -114,6 +117,8 @@
     "goBack": "Quay lại",
     "none": "Không có",
     "optional": "(không bắt buộc)",
+    "allMembers": "Tất cả",
+    "selectMember": "Chọn nhân viên",
     "status": {
       "DRAFT": "Nháp",
       "PENDING_MANAGER": "Chờ Quản lý duyệt",
@@ -442,7 +447,12 @@
     "csvApprovalRatePct": "Tỷ lệ duyệt (%)",
     "csvUncompensatedByDept": "Thiếu giờ chưa bù (theo phòng ban)",
     "exportPromptFilename": "Nhập tên file CSV:",
-    "exportDefaultFilename": "report.csv"
+    "exportDefaultFilename": "report.csv",
+    "monthlyDetail": "Tổng hợp theo tháng",
+    "colFlexRemaining": "Flex còn lại (phút)",
+    "colMenstrualDays": "Nghỉ đèn đỏ (ngày)",
+    "colMenstrualMinutes": "Nghỉ đèn đỏ (phút)",
+    "tabMonthlyDetail": "Tổng hợp"
   },
   "admin": {
     "employees": {

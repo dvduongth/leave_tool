@@ -32,7 +32,19 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useT } from "@/lib/i18n/provider";
+
+const MODE_DURATIONS = {
+  SHORT: 30,
+  LONG: 90,
+} as const;
 
 interface MenstrualRecord {
   id: string;
@@ -76,6 +88,7 @@ export default function WellnessPage() {
 
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formStart, setFormStart] = useState("10:00");
+  const [formMode, setFormMode] = useState<"SHORT" | "LONG">("SHORT");
   const [formNote, setFormNote] = useState("");
 
   const fetchRecords = useCallback(async () => {
@@ -108,10 +121,6 @@ export default function WellnessPage() {
       toast.error(t("wellness.errDateRequired"));
       return;
     }
-    if (!summary) {
-      toast.error(t("common.unexpectedError"));
-      return;
-    }
     if (!formNote.trim()) {
       toast.error("Vui lòng nhập lý do");
       return;
@@ -121,14 +130,13 @@ export default function WellnessPage() {
       const dateStr = `${formDate.getFullYear()}-${String(
         formDate.getMonth() + 1
       ).padStart(2, "0")}-${String(formDate.getDate()).padStart(2, "0")}`;
-      const endTime = addMinutesToHHMM(formStart, summary.durationMinutes);
       const res = await fetch("/api/menstrual-leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: dateStr,
           startTime: formStart,
-          endTime,
+          mode: formMode,
           note: formNote.trim(),
         }),
       });
@@ -137,6 +145,7 @@ export default function WellnessPage() {
         setDialogOpen(false);
         setFormDate(undefined);
         setFormStart("10:00");
+        setFormMode("SHORT");
         setFormNote("");
         fetchRecords();
       } else {
@@ -334,22 +343,35 @@ export default function WellnessPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
+                <Label>{t("wellness.fieldMode")}</Label>
+                <Select
+                  value={formMode}
+                  onValueChange={(val) => val && setFormMode(val as "SHORT" | "LONG")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SHORT">{t("wellness.modeShort")}</SelectItem>
+                    <SelectItem value="LONG">{t("wellness.modeLong")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>{t("wellness.fieldStart")}</Label>
                 <Input
                   type="time"
                   value={formStart}
                   onChange={(e) => setFormStart(e.target.value)}
                 />
-                {summary && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("wellness.endAutoHint")
-                      .replace("{mins}", String(summary.durationMinutes))
-                      .replace(
-                        "{end}",
-                        addMinutesToHHMM(formStart, summary.durationMinutes)
-                      )}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {t("wellness.endAutoHint")
+                    .replace("{mins}", String(MODE_DURATIONS[formMode]))
+                    .replace(
+                      "{end}",
+                      addMinutesToHHMM(formStart, MODE_DURATIONS[formMode])
+                    )}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>

@@ -49,8 +49,11 @@
     "dialogTitle": "ウェルネス休憩を記録",
     "dialogDesc": "{mins}分の休憩、自動承認されます。",
     "fieldDate": "日付",
+    "fieldMode": "時間",
     "fieldStart": "開始時刻",
     "fieldNote": "メモ",
+    "modeShort": "短い休憩（30分）",
+    "modeLong": "1.5時間（90分）",
     "endAutoHint": "終了は{end}（+{mins}分）。",
     "onlyFemale": "この機能は女性従業員のみ利用可能です。",
     "errLoad": "データを読み込めませんでした",
@@ -114,6 +117,8 @@
     "goBack": "戻る",
     "none": "なし",
     "optional": "(任意)",
+    "allMembers": "全員",
+    "selectMember": "メンバーを選択",
     "status": {
       "DRAFT": "下書き",
       "PENDING_MANAGER": "マネージャー承認待ち",
@@ -442,7 +447,12 @@
     "csvApprovalRatePct": "承認率 (%)",
     "csvUncompensatedByDept": "未補填フレックス不足（部門別）",
     "exportPromptFilename": "CSVファイル名を入力:",
-    "exportDefaultFilename": "report.csv"
+    "exportDefaultFilename": "report.csv",
+    "monthlyDetail": "月次詳細",
+    "colFlexRemaining": "フレックス残り（分）",
+    "colMenstrualDays": "生理休暇（日）",
+    "colMenstrualMinutes": "生理休暇（分）",
+    "tabMonthlyDetail": "詳細"
   },
   "admin": {
     "employees": {

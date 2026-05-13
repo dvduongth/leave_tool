@@ -66,6 +66,11 @@ enum MaternityMode {
   LATE_ARRIVAL
 }
 
+enum MenstrualMode {
+  SHORT
+  LONG
+}
+
 model Department {
   id        String     @id @default(uuid())
   name      String
@@ -289,13 +294,14 @@ model Holiday {
 }
 
 model MenstrualLeave {
-  id         String   @id @default(uuid())
-  employeeId String   @map("employee_id")
-  date       DateTime @db.Date
-  startTime  String   @map("start_time")
-  endTime    String   @map("end_time")
+  id         String        @id @default(uuid())
+  employeeId String        @map("employee_id")
+  date       DateTime      @db.Date
+  startTime  String        @map("start_time")
+  endTime    String        @map("end_time")
+  mode       MenstrualMode @default(SHORT)
   note       String?
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 

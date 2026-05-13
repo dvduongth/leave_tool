@@ -4,6 +4,12 @@ import { requireAuth } from "@/lib/auth-utils";
 import { parseDateInput } from "@/lib/date-utils";
 import { getConfigNumber } from "@/lib/config";
 import { createNotification } from "@/lib/notifications";
+import { MenstrualMode } from "@/generated/prisma";
+
+const MODE_DURATIONS: Record<MenstrualMode, number> = {
+  SHORT: 30,
+  LONG: 90,
+};
 
 function yearMonthOf(d: Date): { start: Date; end: Date } {
   const y = d.getUTCFullYear();
@@ -75,18 +81,32 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function addMinutesToTime(hhmm: string, minutes: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = h * 60 + m + minutes;
+  const hh = Math.floor(total / 60) % 24;
+  const mm = total % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth();
     const body = await request.json();
-    const { date, startTime, endTime, note } = body;
+    const { date, startTime, mode, note } = body;
 
-    if (!date || !startTime || !endTime) {
+    if (!date || !startTime) {
       return Response.json(
-        { error: "Missing required fields: date, startTime, endTime" },
+        { error: "Missing required fields: date, startTime" },
         { status: 400 }
       );
     }
+
+    // Validate mode
+    const selectedMode: MenstrualMode =
+      mode === "LONG" ? MenstrualMode.LONG : MenstrualMode.SHORT;
+    const durationMins = MODE_DURATIONS[selectedMode];
+
     const noteTrimmed = typeof note === "string" ? note.trim() : "";
     if (!noteTrimmed) {
       return Response.json({ error: "Vui lòng nhập lý do" }, { status: 400 });
@@ -109,19 +129,8 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Invalid date" }, { status: 400 });
     }
 
-    // Validate duration ~ configured minutes (allow exact match)
-    const expectedMinutes = await getConfigNumber(
-      "MENSTRUAL_LEAVE_DURATION_MINUTES"
-    );
-    const actualMinutes = durationMinutes(startTime, endTime);
-    if (actualMinutes !== expectedMinutes) {
-      return Response.json(
-        {
-          error: `Duration must be exactly ${expectedMinutes} minutes (got ${actualMinutes})`,
-        },
-        { status: 400 }
-      );
-    }
+    // Calculate endTime based on mode
+    const endTime = addMinutesToTime(startTime, durationMins);
 
     // Enforce monthly limit
     const { start, end } = yearMonthOf(parsedDate);
@@ -150,6 +159,7 @@ export async function POST(request: NextRequest) {
         date: parsedDate,
         startTime,
         endTime,
+        mode: selectedMode,
         note: noteTrimmed,
       },
     });
@@ -159,7 +169,7 @@ export async function POST(request: NextRequest) {
       await createNotification(
         employee.managerId,
         "Menstrual leave logged",
-        `${employee.name} logged a ${expectedMinutes}-minute wellness break on ${date}`,
+        `${employee.name} logged a ${durationMins}-minute wellness break on ${date}`,
         `/wellness`
       );
     }

@@ -25,6 +25,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -60,6 +67,12 @@ interface FlexSummary {
   status: string;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 function getStatusVariant(status: string) {
   switch (status) {
     case "APPROVED":
@@ -91,16 +104,34 @@ export default function FlexTimePage() {
   );
   const [submitting, setSubmitting] = useState(false);
 
+  // Team filter state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("ALL");
+
   // Form state
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formMinutes, setFormMinutes] = useState("");
   const [formReason, setFormReason] = useState("");
 
+  // Fetch team members for filter
+  useEffect(() => {
+    if (isApprover) {
+      fetch("/api/team-members")
+        .then((r) => (r.ok ? r.json() : { members: [] }))
+        .then((data) => setTeamMembers(data.members || []))
+        .catch(() => setTeamMembers([]));
+    }
+  }, [isApprover]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const params = new URLSearchParams({ month });
+      if (isApprover && selectedEmployeeId !== "ALL") {
+        params.set("employeeId", selectedEmployeeId);
+      }
       const [recordsRes, summaryRes] = await Promise.all([
-        fetch(`/api/flex-time?month=${month}`),
+        fetch(`/api/flex-time?${params.toString()}`),
         fetch(`/api/flex-time/summary?month=${month}`),
       ]);
 
@@ -116,7 +147,7 @@ export default function FlexTimePage() {
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month, isApprover, selectedEmployeeId, t]);
 
   const fetchPending = useCallback(async () => {
     if (!isApprover) return;
@@ -256,6 +287,24 @@ export default function FlexTimePage() {
           onChange={(e) => setMonth(e.target.value)}
           className="w-48"
         />
+        {isApprover && teamMembers.length > 0 && (
+          <Select
+            value={selectedEmployeeId}
+            onValueChange={(val) => val && setSelectedEmployeeId(val)}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t("common.selectMember")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t("common.allMembers")}</SelectItem>
+              {teamMembers.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Monthly Summary */}

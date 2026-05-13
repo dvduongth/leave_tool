@@ -23,6 +23,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -51,6 +58,12 @@ interface OTRecord {
   employee?: { id: string; name: string };
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 function getStatusVariant(status: string) {
   switch (status) {
     case "APPROVED":
@@ -77,6 +90,8 @@ export default function OTPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("ALL");
 
   // Form state
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
@@ -101,10 +116,24 @@ export default function OTPage() {
   }
   const [bank, setBank] = useState<OTBankInfo | null>(null);
 
+  // Fetch team members for filter
+  useEffect(() => {
+    if (isApprover) {
+      fetch("/api/team-members")
+        .then((r) => (r.ok ? r.json() : { members: [] }))
+        .then((data) => setTeamMembers(data.members || []))
+        .catch(() => setTeamMembers([]));
+    }
+  }, [isApprover]);
+
   const fetchRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/ot?month=${month}`);
+      const params = new URLSearchParams({ month });
+      if (isApprover && selectedEmployeeId !== "ALL") {
+        params.set("employeeId", selectedEmployeeId);
+      }
+      const res = await fetch(`/api/ot?${params.toString()}`);
       if (res.ok) {
         setRecords(await res.json());
       } else {
@@ -113,7 +142,7 @@ export default function OTPage() {
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month, isApprover, selectedEmployeeId, t]);
 
   const fetchBank = useCallback(async () => {
     try {
@@ -257,6 +286,24 @@ export default function OTPage() {
           onChange={(e) => setMonth(e.target.value)}
           className="w-48"
         />
+        {isApprover && teamMembers.length > 0 && (
+          <Select
+            value={selectedEmployeeId}
+            onValueChange={(val) => val && setSelectedEmployeeId(val)}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t("common.selectMember")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t("common.allMembers")}</SelectItem>
+              {teamMembers.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Card className="flex-1">
           <CardContent className="flex items-center gap-2 py-3">
             <Clock className="size-4 text-muted-foreground" />

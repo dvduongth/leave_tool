@@ -416,7 +416,127 @@ export async function getMonthlyReport(
   };
 }
 
+export async function getMonthlyDetailReport(
+  date: Date,
+  employeeFilter: Record<string, unknown>
+) {
+  const month = getMonthBounds(date);
+  const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+  // Get employees that match the filter
+  const employees = await prisma.employee.findMany({
+    where: employeeFilter.employeeId
+      ? { id: employeeFilter.employeeId as { in: string[] } }
+      : {},
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  const empIds = employees.map((e) => e.id);
+
+  const [leaves, otRecords, flexSummaries, menstrualLeaves] = await Promise.all([
+    prisma.leaveRequest.findMany({
+      where: {
+        employeeId: { in: empIds },
+        status: LeaveStatus.APPROVED,
+        startDate: { lte: month.end },
+        endDate: { gte: month.start },
+      },
+      select: { employeeId: true, totalHours: true },
+    }),
+    prisma.oTRecord.findMany({
+      where: {
+        employeeId: { in: empIds },
+        date: { gte: month.start, lte: month.end },
+        status: "APPROVED",
+      },
+      select: { employeeId: true, otMinutes: true },
+    }),
+    prisma.flexTimeMonthlySummary.findMany({
+      where: {
+        employeeId: { in: empIds },
+        yearMonth,
+      },
+      select: { employeeId: true, remaining: true },
+    }),
+    prisma.menstrualLeave.findMany({
+      where: {
+        employeeId: { in: empIds },
+        date: { gte: month.start, lte: month.end },
+      },
+      select: { employeeId: true, startTime: true, endTime: true },
+    }),
+  ]);
+
+  // Aggregate by employee
+  const empMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      leaveHours: number;
+      otMinutes: number;
+      flexRemaining: number;
+      menstrualDays: number;
+      menstrualMinutes: number;
+    }
+  >();
+
+  for (const emp of employees) {
+    empMap.set(emp.id, {
+      id: emp.id,
+      name: emp.name,
+      leaveHours: 0,
+      otMinutes: 0,
+      flexRemaining: 0,
+      menstrualDays: 0,
+      menstrualMinutes: 0,
+    });
+  }
+
+  for (const l of leaves) {
+    const entry = empMap.get(l.employeeId);
+    if (entry) entry.leaveHours += l.totalHours;
+  }
+
+  for (const r of otRecords) {
+    const entry = empMap.get(r.employeeId);
+    if (entry) entry.otMinutes += r.otMinutes;
+  }
+
+  for (const f of flexSummaries) {
+    const entry = empMap.get(f.employeeId);
+    if (entry) entry.flexRemaining = f.remaining;
+  }
+
+  for (const m of menstrualLeaves) {
+    const entry = empMap.get(m.employeeId);
+    if (entry) {
+      entry.menstrualDays += 1;
+      const [sh, sm] = m.startTime.split(":").map(Number);
+      const [eh, em] = m.endTime.split(":").map(Number);
+      entry.menstrualMinutes += (eh * 60 + em) - (sh * 60 + sm);
+    }
+  }
+
+  const employeeList = Array.from(empMap.values());
+
+  const totals = {
+    leaveHours: employeeList.reduce((s, e) => s + e.leaveHours, 0),
+    otMinutes: employeeList.reduce((s, e) => s + e.otMinutes, 0),
+    menstrualDays: employeeList.reduce((s, e) => s + e.menstrualDays, 0),
+  };
+
+  return {
+    type: "monthly-detail" as const,
+    month: yearMonth,
+    employees: employeeList,
+    totals,
+  };
+}
+
 export type DailyReport = Awaited<ReturnType<typeof getDailyReport>>;
 export type WeeklyReport = Awaited<ReturnType<typeof getWeeklyReport>>;
 export type MonthlyReport = Awaited<ReturnType<typeof getMonthlyReport>>;
-export type AnyReport = DailyReport | WeeklyReport | MonthlyReport;
+export type MonthlyDetailReport = Awaited<ReturnType<typeof getMonthlyDetailReport>>;
+export type AnyReport = DailyReport | WeeklyReport | MonthlyReport | MonthlyDetailReport;

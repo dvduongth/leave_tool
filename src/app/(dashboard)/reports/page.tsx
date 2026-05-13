@@ -49,7 +49,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { useT } from "@/lib/i18n/provider";
 
-type ReportType = "daily" | "weekly" | "monthly";
+type ReportType = "daily" | "weekly" | "monthly" | "monthly-detail";
 
 interface DailyData {
   type: "daily";
@@ -105,6 +105,27 @@ interface MonthlyData {
   topLeaveTakers: { id: string; name: string; hours: number }[];
 }
 
+interface MonthlyDetailEmployee {
+  id: string;
+  name: string;
+  leaveHours: number;
+  otMinutes: number;
+  flexRemaining: number;
+  menstrualDays: number;
+  menstrualMinutes: number;
+}
+
+interface MonthlyDetailData {
+  type: "monthly-detail";
+  month: string;
+  employees: MonthlyDetailEmployee[];
+  totals: {
+    leaveHours: number;
+    otMinutes: number;
+    menstrualDays: number;
+  };
+}
+
 interface Department {
   id: string;
   name: string;
@@ -116,7 +137,7 @@ export default function ReportsPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [departmentId, setDepartmentId] = useState<string>("ALL");
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [data, setData] = useState<DailyData | WeeklyData | MonthlyData | null>(null);
+  const [data, setData] = useState<DailyData | WeeklyData | MonthlyData | MonthlyDetailData | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Fetch departments for filter
@@ -162,7 +183,7 @@ export default function ReportsPage() {
   }, [fetchReport]);
 
   const handleTabChange = (value: unknown) => {
-    const types: ReportType[] = ["daily", "weekly", "monthly"];
+    const types: ReportType[] = ["daily", "weekly", "monthly", "monthly-detail"];
     if (typeof value === "number" && value >= 0 && value < types.length) {
       setReportType(types[value]);
     }
@@ -304,6 +325,7 @@ export default function ReportsPage() {
           <TabsTrigger value={0}>{t("reports.tabDaily")}</TabsTrigger>
           <TabsTrigger value={1}>{t("reports.tabWeekly")}</TabsTrigger>
           <TabsTrigger value={2}>{t("reports.tabMonthly")}</TabsTrigger>
+          <TabsTrigger value={3}>{t("reports.tabMonthlyDetail")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={0}>
@@ -327,6 +349,14 @@ export default function ReportsPage() {
             <LoadingState />
           ) : data?.type === "monthly" ? (
             <MonthlyReport data={data} />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value={3}>
+          {loading ? (
+            <LoadingState />
+          ) : data?.type === "monthly-detail" ? (
+            <MonthlyDetailReport data={data} />
           ) : null}
         </TabsContent>
       </Tabs>
@@ -735,6 +765,89 @@ function MonthlyReport({ data }: { data: MonthlyData }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function MonthlyDetailReport({ data }: { data: MonthlyDetailData }) {
+  const t = useT();
+  return (
+    <div className="space-y-4 pt-4">
+      <p className="text-sm text-muted-foreground">{data.month}</p>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("reports.totalLeave")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{data.totals.leaveHours}h</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("reports.totalOT")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {Math.round((data.totals.otMinutes / 60) * 10) / 10}h
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("reports.minutes").replace("{count}", String(data.totals.otMinutes))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("reports.colMenstrualDays")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{data.totals.menstrualDays}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("reports.employeeBreakdown")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.employees.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("reports.noData")}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("reports.colEmployee")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colLeaveHours")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colOtMinutes")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colFlexRemaining")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colMenstrualDays")}</TableHead>
+                    <TableHead className="text-right">{t("reports.colMenstrualMinutes")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.employees.map((emp) => (
+                    <TableRow key={emp.id}>
+                      <TableCell>{emp.name}</TableCell>
+                      <TableCell className="text-right">{emp.leaveHours}</TableCell>
+                      <TableCell className="text-right">{emp.otMinutes}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={emp.flexRemaining > 0 ? "text-red-500" : ""}>
+                          {emp.flexRemaining}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">{emp.menstrualDays}</TableCell>
+                      <TableCell className="text-right">{emp.menstrualMinutes}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

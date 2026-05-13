@@ -38,6 +38,12 @@ interface LeaveRow {
   employee?: { id: string; name: string };
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const STATUS_VALUES = [
   "ALL",
   "DRAFT",
@@ -59,9 +65,26 @@ export default function LeavesPage() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [scope, setScope] = useState<"own" | "team">("own");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("ALL");
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
   const canViewTeam = userRole === "MANAGER" || userRole === "HEAD" || userRole === "ADMIN";
+
+  // Fetch team members when scope changes to "team"
+  useEffect(() => {
+    if (scope === "team" && canViewTeam) {
+      fetch("/api/team-members")
+        .then((r) => (r.ok ? r.json() : { members: [] }))
+        .then((data) => setTeamMembers(data.members || []))
+        .catch(() => setTeamMembers([]));
+    }
+  }, [scope, canViewTeam]);
+
+  // Reset employee filter when switching scope
+  useEffect(() => {
+    setSelectedEmployeeId("ALL");
+  }, [scope]);
 
   const fetchLeaves = useCallback(async () => {
     setLoading(true);
@@ -71,6 +94,9 @@ export default function LeavesPage() {
       if (dateFrom) params.set("from", format(dateFrom, 'yyyy-MM-dd'));
       if (dateTo) params.set("to", format(dateTo, 'yyyy-MM-dd'));
       params.set("scope", scope);
+      if (scope === "team" && selectedEmployeeId !== "ALL") {
+        params.set("employeeId", selectedEmployeeId);
+      }
 
       const res = await fetch(`/api/leaves?${params.toString()}`);
       if (res.ok) {
@@ -80,7 +106,7 @@ export default function LeavesPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, dateFrom, dateTo, scope]);
+  }, [statusFilter, dateFrom, dateTo, scope, selectedEmployeeId]);
 
   useEffect(() => {
     fetchLeaves();
@@ -125,6 +151,26 @@ export default function LeavesPage() {
               {t("leaves.scopeTeam")}
             </Button>
           </div>
+        )}
+
+        {/* Employee filter (only in team mode) */}
+        {scope === "team" && teamMembers.length > 0 && (
+          <Select
+            value={selectedEmployeeId}
+            onValueChange={(val) => val && setSelectedEmployeeId(val)}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder={t("common.selectMember")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">{t("common.allMembers")}</SelectItem>
+              {teamMembers.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
 
         <Select
