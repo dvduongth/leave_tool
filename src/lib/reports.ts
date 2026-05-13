@@ -428,8 +428,8 @@ export async function getMonthlyDetailReport(
     where: employeeFilter.employeeId
       ? { id: employeeFilter.employeeId as { in: string[] } }
       : {},
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
+    select: { id: true, name: true, joinDate: true },
+    orderBy: { joinDate: { sort: "asc", nulls: "last" } },
   });
 
   const empIds = employees.map((e) => e.id);

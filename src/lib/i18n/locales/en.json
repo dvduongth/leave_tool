@@ -32,6 +32,7 @@
     "admin": "Admin",
     "employees": "Employees",
     "holidays": "Holidays",
+    "fridayOverride": "Friday OT",
     "adminSettings": "System Config"
   },
   "wellness": {
@@ -532,6 +533,31 @@
       "errDelete": "Failed to delete holiday",
       "toastCreated": "Holiday created",
       "toastDeleted": "Holiday deleted"
+    },
+    "fridayOverride": {
+      "title": "Friday Extended Hours",
+      "subtitle": "Configure weeks where Friday works like weekdays (8h instead of 7h)",
+      "add": "Add Week",
+      "colWeek": "Week",
+      "colFriday": "Friday",
+      "colNote": "Note",
+      "colCreator": "Created by",
+      "empty": "No weeks configured yet.",
+      "addTitle": "Add Extended Friday",
+      "addDesc": "Select a week to make Friday work like a regular weekday (8h). Affects leave hour calculations.",
+      "selectWeek": "Select week",
+      "pickWeek": "Pick any day in the week",
+      "fridayWillBe": "Friday will be:",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g., Urgent project deadline",
+      "deleteTitle": "Remove configuration",
+      "deleteDesc": "Are you sure you want to remove this configuration? Friday of that week will return to normal hours.",
+      "errLoadFailed": "Failed to load list",
+      "errDateRequired": "Week selection is required",
+      "errCreate": "Failed to create configuration",
+      "errDelete": "Failed to delete configuration",
+      "toastCreated": "Extended Friday week added",
+      "toastDeleted": "Configuration removed"
     }
   }
 }

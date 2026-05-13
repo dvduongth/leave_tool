@@ -32,6 +32,7 @@
     "admin": "管理",
     "employees": "従業員",
     "holidays": "祝日",
+    "fridayOverride": "金曜延長",
     "adminSettings": "システム設定"
   },
   "wellness": {
@@ -532,6 +533,31 @@
       "errDelete": "祝日の削除に失敗しました",
       "toastCreated": "祝日を作成しました",
       "toastDeleted": "祝日を削除しました"
+    },
+    "fridayOverride": {
+      "title": "金曜延長勤務",
+      "subtitle": "金曜日を平日と同じ勤務時間（8時間）にする週を設定",
+      "add": "週を追加",
+      "colWeek": "週",
+      "colFriday": "金曜日",
+      "colNote": "備考",
+      "colCreator": "作成者",
+      "empty": "設定された週はありません。",
+      "addTitle": "延長勤務週を追加",
+      "addDesc": "金曜日を通常の平日として扱う週を選択します（8時間）。休暇時間の計算に影響します。",
+      "selectWeek": "週を選択",
+      "pickWeek": "週内の任意の日を選択",
+      "fridayWillBe": "対象の金曜日:",
+      "note": "備考（任意）",
+      "notePlaceholder": "例: 緊急プロジェクト対応",
+      "deleteTitle": "設定を削除",
+      "deleteDesc": "本当にこの設定を削除しますか？その週の金曜日は通常の勤務時間に戻ります。",
+      "errLoadFailed": "一覧の読み込みに失敗しました",
+      "errDateRequired": "週の選択は必須です",
+      "errCreate": "設定の作成に失敗しました",
+      "errDelete": "設定の削除に失敗しました",
+      "toastCreated": "延長勤務週を追加しました",
+      "toastDeleted": "設定を削除しました"
     }
   }
 }

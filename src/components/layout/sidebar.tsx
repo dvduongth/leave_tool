@@ -17,6 +17,7 @@ import {
   Sliders,
   CalendarRange,
   Baby,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/provider";
@@ -66,6 +67,7 @@ const navItems: NavItem[] = [
 const adminItems: NavItem[] = [
   { labelKey: "nav.employees", href: "/admin/employees", icon: Users },
   { labelKey: "nav.holidays", href: "/admin/holidays", icon: CalendarOff },
+  { labelKey: "nav.fridayOverride", href: "/admin/friday-override", icon: CalendarClock },
   { labelKey: "nav.adminSettings", href: "/admin/settings", icon: Sliders },
 ];
 

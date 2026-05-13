@@ -32,6 +32,7 @@
     "admin": "Quản trị",
     "employees": "Nhân viên",
     "holidays": "Ngày lễ",
+    "fridayOverride": "Tăng ca T6",
     "adminSettings": "Cấu hình hệ thống"
   },
   "wellness": {
@@ -532,6 +533,31 @@
       "errDelete": "Không thể xoá ngày lễ",
       "toastCreated": "Đã tạo ngày lễ",
       "toastDeleted": "Đã xoá ngày lễ"
+    },
+    "fridayOverride": {
+      "title": "Tăng ca thứ 6",
+      "subtitle": "Cấu hình tuần nào thứ 6 làm như ngày thường (8h thay vì 7h)",
+      "add": "Thêm tuần",
+      "colWeek": "Tuần",
+      "colFriday": "Thứ 6",
+      "colNote": "Ghi chú",
+      "colCreator": "Người tạo",
+      "empty": "Chưa có tuần nào được cấu hình.",
+      "addTitle": "Thêm tuần tăng ca",
+      "addDesc": "Chọn tuần để thứ 6 làm việc như ngày thường (8h). Ảnh hưởng tính giờ nghỉ phép.",
+      "selectWeek": "Chọn tuần",
+      "pickWeek": "Chọn ngày bất kỳ trong tuần",
+      "fridayWillBe": "Thứ 6 sẽ là:",
+      "note": "Ghi chú (không bắt buộc)",
+      "notePlaceholder": "VD: Dự án gấp, tăng cường nhân sự",
+      "deleteTitle": "Xoá cấu hình",
+      "deleteDesc": "Bạn có chắc muốn xoá cấu hình này? Thứ 6 của tuần đó sẽ trở lại giờ bình thường.",
+      "errLoadFailed": "Không tải được danh sách",
+      "errDateRequired": "Bắt buộc chọn tuần",
+      "errCreate": "Không thể tạo cấu hình",
+      "errDelete": "Không thể xoá cấu hình",
+      "toastCreated": "Đã thêm tuần tăng ca",
+      "toastDeleted": "Đã xoá cấu hình"
     }
   }
 }

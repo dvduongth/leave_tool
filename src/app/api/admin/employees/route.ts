@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         department: { select: { id: true, name: true } },
         manager: { select: { id: true, name: true } },
       },
-      orderBy: { name: "asc" },
+      orderBy: { joinDate: { sort: "asc", nulls: "last" } },
     });
 
     return Response.json(employees);

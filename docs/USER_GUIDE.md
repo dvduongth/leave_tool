@@ -40,11 +40,16 @@
 
 - **Chu kỳ phép (Cycle)**: 01/06 → 31/05 năm sau. Cấp 96 giờ (12 ngày) / cycle.
 - **Grace period**: 2 tháng sau cycle (đến 31/07) vẫn dùng được phép cũ.
+- **Thâm niên (Seniority)**: mỗi 5 năm được cộng thêm 8 giờ phép (1 ngày). Tính từ mốc 01/06 của năm vào làm, có lợi cho nhân viên.
+  - Ví dụ: vào 15/03/2020 → mốc tính = 01/06/2019 → đến 01/06/2024 = 5 năm → +8h bonus
 - **Ca làm việc**:
   - A: 07:00–17:00 (thứ 6: 07:00–16:00)
   - B: 07:30–17:30 (thứ 6: 07:30–16:30)
   - C: 09:00–19:00 (thứ 6: 10:00–19:00)
+  - D: 08:00–18:00 (thứ 6: 08:00–17:00)
+- **Friday Override**: Admin/Head có thể cấu hình tuần nào thứ 6 làm như ngày thường (8h thay vì 7h).
 - **Giờ nghỉ hợp lệ**: chỉ tính trong giờ hành chính, trừ 1 giờ nghỉ trưa. Không tính cuối tuần / lễ.
+- **Sắp xếp danh sách**: mọi danh sách nhân viên được sắp theo thâm niên (người vào lâu nhất trước).
 
 ## 4. Xin nghỉ phép
 
@@ -116,6 +121,7 @@ Có filter theo phòng ban (Head / Admin) và xuất CSV.
 
 - `Employees`: CRUD nhân viên, đổi role, đổi manager, reset mật khẩu.
 - `Holidays`: cấu hình ngày lễ theo năm. Ảnh hưởng tính giờ + hệ số OT.
+- `Friday Override`: cấu hình tuần nào thứ 6 làm như ngày thường (xem mục 9.5).
 - Tạo nhân viên mới → hệ thống tự cấp 96h phép cho cycle hiện tại.
 
 ## 9.1. Đổi ca làm theo tuần
@@ -151,6 +157,16 @@ Tại `Settings`:
 - **Email notifications**: bật/tắt nhận email.
 - **Lần đầu đăng nhập**: bắt buộc đổi mật khẩu mặc định trước khi tiếp tục.
 
+## 9.5. Tăng ca thứ 6 (Friday Override)
+
+Khi công ty cần tăng cường làm việc, Admin hoặc Head có thể cấu hình **thứ 6 làm như ngày thường** (8h thay vì 7h).
+
+1. **Thêm tuần tăng ca**: chọn ngày thứ 2 của tuần đó + ghi chú (tuỳ chọn).
+2. **Ảnh hưởng**: mọi đơn nghỉ phép trong thứ 6 của tuần đó sẽ tính theo giờ weekday.
+3. **Xoá**: có thể xoá tuần đã thêm nếu huỷ kế hoạch.
+
+> Lưu ý: chỉ ảnh hưởng đơn nghỉ phép (tính giờ). Không ảnh hưởng OT / Flex.
+
 ## 10. FAQ
 
 **Nghỉ nửa buổi sáng thì ghi thế nào?**
@@ -173,6 +189,12 @@ Nghỉ phép = trừ quỹ. Flex = thiếu giờ tạm thời, phải bù trong 
 
 **Không đăng nhập được?**
 Liên hệ Admin reset mật khẩu.
+
+**Filter đơn nghỉ phép hoạt động thế nào?**
+Filter theo khoảng ngày sẽ hiện tất cả đơn có ngày nghỉ **chồng lấn** với khoảng đó. Ví dụ: filter 15-20/5 sẽ hiện đơn nghỉ 10-17/5 (chồng) nhưng không hiện đơn 10-14/5 (không chồng).
+
+**Bonus thâm niên tính thế nào?**
+Mỗi 5 năm được +8h (1 ngày). Mốc tính bắt đầu từ 01/06 của năm vào làm (có lợi cho nhân viên). Ví dụ: vào 15/03/2020 → mốc = 01/06/2019 → đến 01/06/2024 được +8h bonus.
 
 ---
 

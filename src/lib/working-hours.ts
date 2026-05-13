@@ -1,6 +1,23 @@
 import type { ShiftType } from "@/generated/prisma";
 import prisma from "@/lib/prisma";
 
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+async function isFridayOverride(date: Date): Promise<boolean> {
+  const monday = getMondayOfWeek(date);
+  const override = await prisma.fridayOverride.findUnique({
+    where: { weekStart: monday },
+  });
+  return !!override;
+}
+
 // Shift definitions: each shift has weekday (Mon-Thu) and Friday ranges
 const SHIFT_CONFIG: Record<
   ShiftType,
@@ -63,18 +80,26 @@ export function minutesToTime(minutes: number): string {
 }
 
 /**
- * Pure config lookup: returns the working ranges for a given shift on a given date.
+ * Returns the working ranges for a given shift on a given date.
  * Returns null for Saturday (6) and Sunday (0).
+ * For Friday, checks if there's an override to use weekday hours instead.
  */
-export function getWorkingRanges(
+export async function getWorkingRanges(
   shift: ShiftType,
   date: Date
-): { ranges: { start: string; end: string }[]; totalMinutes: number } | null {
+): Promise<{ ranges: { start: string; end: string }[]; totalMinutes: number } | null> {
   const day = date.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
   if (day === 0 || day === 6) return null;
 
   const config = SHIFT_CONFIG[shift];
-  const ranges = day === 5 ? config.friday : config.weekday;
+
+  let ranges: { start: string; end: string }[];
+  if (day === 5) {
+    const fridayExtended = await isFridayOverride(date);
+    ranges = fridayExtended ? config.weekday : config.friday;
+  } else {
+    ranges = config.weekday;
+  }
 
   const totalMinutes = ranges.reduce((sum, r) => {
     return sum + (timeToMinutes(r.end) - timeToMinutes(r.start));
@@ -207,7 +232,7 @@ export async function calculateLeaveEnd(
 
     const dow = currentDate.getDay();
     const shift = resolveShiftFromHistory(history, dow, currentDate, fallback);
-    const workingDay = getWorkingRanges(shift, currentDate);
+    const workingDay = await getWorkingRanges(shift, currentDate);
     if (!workingDay) {
       currentDate = addDays(currentDate, 1);
       currentTimeMinutes = 0;
@@ -273,7 +298,7 @@ export async function calculateLeaveEnd(
   // Fallback: use the last day's shift to derive end time
   const lastDow = currentDate.getDay();
   const lastShift = resolveShiftFromHistory(history, lastDow, currentDate, fallback);
-  const lastDay = getWorkingRanges(lastShift, currentDate);
+  const lastDay = await getWorkingRanges(lastShift, currentDate);
   const fallbackTime = lastDay
     ? lastDay.ranges[lastDay.ranges.length - 1].end
     : minutesToTime(currentTimeMinutes);
@@ -339,7 +364,7 @@ export async function calculateHoursFromRange(
 
     const dow = currentDate.getDay();
     const shift = resolveShiftFromHistory(history, dow, currentDate, fallback);
-    const workingDay = getWorkingRanges(shift, currentDate);
+    const workingDay = await getWorkingRanges(shift, currentDate);
 
     if (workingDay) {
       const windowStart = isFirst ? startMin : 0;

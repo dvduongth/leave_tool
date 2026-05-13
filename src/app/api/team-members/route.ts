@@ -6,33 +6,37 @@ export async function GET() {
   try {
     const user = await requireAuth();
 
-    let members: { id: string; name: string; email: string }[] = [];
+    let members: { id: string; name: string; email: string; joinDate: Date | null }[] = [];
 
     if (user.role === Role.EMPLOYEE) {
       // Employee can only see themselves
-      members = [{ id: user.id, name: user.name, email: user.email }];
+      const self = await prisma.employee.findUnique({
+        where: { id: user.id },
+        select: { id: true, name: true, email: true, joinDate: true },
+      });
+      members = self ? [self] : [];
     } else if (user.role === Role.MANAGER) {
-      // Manager sees their direct reports
+      // Manager sees their direct reports (sorted by seniority)
       const subordinates = await prisma.employee.findMany({
         where: { managerId: user.id },
-        select: { id: true, name: true, email: true },
-        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true, joinDate: true },
+        orderBy: { joinDate: { sort: "asc", nulls: "last" } },
       });
       members = subordinates;
     } else if (user.role === Role.HEAD) {
-      // Head sees all department members (excluding self)
+      // Head sees all department members (excluding self, sorted by seniority)
       const deptMembers = await prisma.employee.findMany({
         where: { departmentId: user.departmentId, id: { not: user.id } },
-        select: { id: true, name: true, email: true },
-        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true, joinDate: true },
+        orderBy: { joinDate: { sort: "asc", nulls: "last" } },
       });
       members = deptMembers;
     } else if (user.role === Role.ADMIN) {
-      // Admin sees all employees (excluding self)
+      // Admin sees all employees (excluding self, sorted by seniority)
       const allEmployees = await prisma.employee.findMany({
         where: { id: { not: user.id } },
-        select: { id: true, name: true, email: true },
-        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true, joinDate: true },
+        orderBy: { joinDate: { sort: "asc", nulls: "last" } },
       });
       members = allEmployees;
     }

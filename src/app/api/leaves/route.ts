@@ -97,11 +97,15 @@ export async function GET(request: Request) {
     if (status) {
       where.status = status;
     }
-    if (startDate) {
-      where.startDate = { ...(where.startDate as object || {}), gte: new Date(startDate) };
-    }
-    if (endDate) {
-      where.endDate = { ...(where.endDate as object || {}), lte: new Date(endDate) };
+    // Overlaps filter: show leaves that overlap with the date range
+    // A leave overlaps if: leave.startDate <= filterEnd AND leave.endDate >= filterStart
+    if (startDate && endDate) {
+      where.startDate = { lte: new Date(endDate) };
+      where.endDate = { gte: new Date(startDate) };
+    } else if (startDate) {
+      where.endDate = { gte: new Date(startDate) };
+    } else if (endDate) {
+      where.startDate = { lte: new Date(endDate) };
     }
 
     const leaves = await prisma.leaveRequest.findMany({

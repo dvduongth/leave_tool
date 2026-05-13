@@ -123,6 +123,7 @@ model Employee {
   maternityLeaves     MaternityLeave[]
   maternityApprovals  MaternityLeave[]       @relation("MaternityApprover")
   auditLogs           AuditLog[]
+  fridayOverrides     FridayOverride[]       @relation("FridayOverrideCreator")
 
   @@map("employees")
 }
@@ -431,4 +432,17 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+model FridayOverride {
+  id        String   @id @default(uuid())
+  weekStart DateTime @db.Date
+  note      String?
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator Employee @relation("FridayOverrideCreator", fields: [createdBy], references: [id])
+
+  @@unique([weekStart])
+  @@map("friday_overrides")
 }
