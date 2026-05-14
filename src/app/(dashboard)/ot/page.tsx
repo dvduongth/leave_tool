@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchWithRetry } from "@/lib/fetch-retry";
-import { Plus, CalendarIcon, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Plus, CalendarIcon, Clock, CheckCircle, XCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -70,7 +71,10 @@ function getStatusVariant(status: string) {
     case "APPROVED":
       return "default";
     case "REJECTED":
+    case "CANCELLED":
       return "destructive";
+    case "CANCEL_PENDING":
+      return "outline";
     default:
       return "secondary";
   }
@@ -100,6 +104,10 @@ export default function OTPage() {
   const [formStart, setFormStart] = useState("18:00");
   const [formEnd, setFormEnd] = useState("20:00");
   const [formNote, setFormNote] = useState("");
+
+  // Cancel dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<OTRecord | null>(null);
 
   interface OTBalanceCycle {
     cycleYear: number;
@@ -264,6 +272,35 @@ export default function OTPage() {
     } catch {
       toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
+  }
+
+  async function handleRequestCancel() {
+    if (!cancelTarget) return;
+    setSubmitting(true);
+    try {
+      const res = await fetchWithRetry(`/api/ot/${cancelTarget.id}/cancel`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success(t("leaveDetail.toastCancelSubmitted"));
+        setCancelDialogOpen(false);
+        setCancelTarget(null);
+        fetchRecords();
+        fetchBank();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || t("leaveDetail.errCancel"));
+      }
+    } catch {
+      toast.error("Kết nối thất bại, vui lòng thử lại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function openCancelDialog(record: OTRecord) {
+    setCancelTarget(record);
+    setCancelDialogOpen(true);
   }
 
   return (
@@ -436,6 +473,16 @@ export default function OTPage() {
                             title="Huỷ yêu cầu"
                           >
                             <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
+                        {record.status === "APPROVED" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openCancelDialog(record)}
+                            title={t("leaveDetail.requestCancel")}
+                          >
+                            <X className="size-4 text-destructive" />
                           </Button>
                         )}
                       </TableCell>
@@ -655,6 +702,30 @@ export default function OTPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Request Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("leaveDetail.cancelDialogTitleRequest")}</DialogTitle>
+            <DialogDescription>
+              {t("leaveDetail.cancelDialogDescRequest")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              {t("common.goBack")}
+            </DialogClose>
+            <Button
+              variant="destructive"
+              disabled={submitting}
+              onClick={handleRequestCancel}
+            >
+              {t("common.confirm")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

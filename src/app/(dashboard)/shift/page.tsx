@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchWithRetry } from "@/lib/fetch-retry";
-import { CalendarIcon, CheckCircle, XCircle, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, CheckCircle, XCircle, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -63,7 +64,7 @@ interface ShiftChangeRequest {
   effectiveDate: string;
   weeklyShifts: Record<string, "A" | "B" | "C" | "D">;
   reason: string | null;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCEL_PENDING" | "CANCELLED";
   managerComment: string | null;
   approvedAt: string | null;
   createdAt: string;
@@ -71,9 +72,10 @@ interface ShiftChangeRequest {
   approver?: { id: string; name: string } | null;
 }
 
-function statusVariant(s: string): "default" | "secondary" | "destructive" {
+function statusVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "APPROVED") return "default";
-  if (s === "REJECTED") return "destructive";
+  if (s === "REJECTED" || s === "CANCELLED") return "destructive";
+  if (s === "CANCEL_PENDING") return "outline";
   return "secondary";
 }
 
@@ -99,6 +101,10 @@ export default function ShiftPage() {
   const [formReason, setFormReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [effectiveDateOpen, setEffectiveDateOpen] = useState(false);
+
+  // Cancel dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<ShiftChangeRequest | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -194,6 +200,34 @@ export default function ShiftPage() {
     } catch {
       toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
+  }
+
+  async function handleRequestCancel() {
+    if (!cancelTarget) return;
+    setSubmitting(true);
+    try {
+      const res = await fetchWithRetry(`/api/shift/change-request/${cancelTarget.id}/cancel`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success("Yêu cầu huỷ đổi ca đã được gửi");
+        setCancelDialogOpen(false);
+        setCancelTarget(null);
+        fetchAll();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Gửi yêu cầu thất bại");
+      }
+    } catch {
+      toast.error("Kết nối thất bại, vui lòng thử lại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function openCancelDialog(req: ShiftChangeRequest) {
+    setCancelTarget(req);
+    setCancelDialogOpen(true);
   }
 
   const myRequests = requests.filter((r) => r.employeeId === userId);
@@ -301,6 +335,11 @@ export default function ShiftPage() {
                         {r.status === "PENDING" && (
                           <Button size="icon" variant="ghost" onClick={() => handleCancelOwn(r.id)} title="Huỷ">
                             <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
+                        {r.status === "APPROVED" && (
+                          <Button size="sm" variant="ghost" onClick={() => openCancelDialog(r)} title="Yêu cầu huỷ">
+                            <X className="size-4 text-destructive" />
                           </Button>
                         )}
                       </TableCell>
@@ -452,6 +491,30 @@ export default function ShiftPage() {
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
               {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Request Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yêu cầu huỷ đổi ca</DialogTitle>
+            <DialogDescription>
+              Yêu cầu này sẽ được gửi đến Manager để duyệt. Lưu ý: Ca làm đã áp dụng sẽ không tự động hoàn lại.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Quay lại
+            </DialogClose>
+            <Button
+              variant="destructive"
+              disabled={submitting}
+              onClick={handleRequestCancel}
+            >
+              Xác nhận
             </Button>
           </DialogFooter>
         </DialogContent>

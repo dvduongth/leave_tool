@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Plus, CalendarIcon, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Plus, CalendarIcon, CheckCircle, XCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -79,7 +80,10 @@ function getStatusVariant(status: string) {
     case "APPROVED":
       return "default";
     case "REJECTED":
+    case "CANCELLED":
       return "destructive";
+    case "CANCEL_PENDING":
+      return "outline";
     default:
       return "secondary";
   }
@@ -114,6 +118,10 @@ export default function FlexTimePage() {
   const [formDateOpen, setFormDateOpen] = useState(false);
   const [formMinutes, setFormMinutes] = useState("");
   const [formReason, setFormReason] = useState("");
+
+  // Cancel dialog state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<FlexRecord | null>(null);
 
   // Fetch team members for filter
   useEffect(() => {
@@ -259,6 +267,34 @@ export default function FlexTimePage() {
     } catch {
       toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
+  }
+
+  async function handleRequestCancel() {
+    if (!cancelTarget) return;
+    setSubmitting(true);
+    try {
+      const res = await fetchWithRetry(`/api/flex-time/${cancelTarget.id}/cancel`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        toast.success(t("leaveDetail.toastCancelSubmitted"));
+        setCancelDialogOpen(false);
+        setCancelTarget(null);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || t("leaveDetail.errCancel"));
+      }
+    } catch {
+      toast.error("Kết nối thất bại, vui lòng thử lại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function openCancelDialog(record: FlexRecord) {
+    setCancelTarget(record);
+    setCancelDialogOpen(true);
   }
 
   return (
@@ -422,6 +458,16 @@ export default function FlexTimePage() {
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
                         )}
+                        {r.status === "APPROVED" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openCancelDialog(r)}
+                            title={t("leaveDetail.requestCancel")}
+                          >
+                            <X className="size-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -486,6 +532,16 @@ export default function FlexTimePage() {
                             title="Huỷ yêu cầu"
                           >
                             <Trash2 className="size-4 text-destructive" />
+                          </Button>
+                        )}
+                        {r.status === "APPROVED" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openCancelDialog(r)}
+                            title={t("leaveDetail.requestCancel")}
+                          >
+                            <X className="size-4 text-destructive" />
                           </Button>
                         )}
                       </TableCell>
@@ -650,6 +706,30 @@ export default function FlexTimePage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Request Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("leaveDetail.cancelDialogTitleRequest")}</DialogTitle>
+            <DialogDescription>
+              {t("leaveDetail.cancelDialogDescRequest")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              {t("common.goBack")}
+            </DialogClose>
+            <Button
+              variant="destructive"
+              disabled={submitting}
+              onClick={handleRequestCancel}
+            >
+              {t("common.confirm")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

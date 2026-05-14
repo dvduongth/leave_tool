@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Users, User } from "lucide-react";
+import { CalendarIcon, Plus, Users, User, MoreHorizontal, Eye, X } from "lucide-react";
+import { toast } from "sonner";
 import { useLeaves, useTeamMembers } from "@/lib/swr";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,6 +26,21 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
 import { useT } from "@/lib/i18n/provider";
 import type { LeaveStatus } from "@/generated/prisma";
@@ -67,8 +84,12 @@ export default function LeavesPage() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("ALL");
   const [dateFromOpen, setDateFromOpen] = useState(false);
   const [dateToOpen, setDateToOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<LeaveRow | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const userId = (session?.user as { id?: string } | undefined)?.id;
   const canViewTeam = userRole === "MANAGER" || userRole === "HEAD" || userRole === "ADMIN";
 
   // SWR hooks for data fetching with caching
@@ -88,6 +109,43 @@ export default function LeavesPage() {
   useEffect(() => {
     setSelectedEmployeeId("ALL");
   }, [scope]);
+
+  const { mutate } = useLeaves({
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
+    from: dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined,
+    to: dateTo ? format(dateTo, "yyyy-MM-dd") : undefined,
+    scope,
+    employeeId: scope === "team" && selectedEmployeeId !== "ALL" ? selectedEmployeeId : undefined,
+  });
+
+  async function handleRequestCancel() {
+    if (!cancelTarget) return;
+    setSubmitting(true);
+    try {
+      const res = await fetchWithRetry(`/api/leaves/${cancelTarget.id}/cancel`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || t("leaveDetail.errCancel"));
+        return;
+      }
+      toast.success(t("leaveDetail.toastCancelSubmitted"));
+      setCancelDialogOpen(false);
+      setCancelTarget(null);
+      mutate();
+    } catch {
+      toast.error("Kết nối thất bại, vui lòng thử lại");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function openCancelDialog(leave: LeaveRow, e: React.MouseEvent) {
+    e.stopPropagation();
+    setCancelTarget(leave);
+    setCancelDialogOpen(true);
+  }
 
   return (
     <div className="space-y-6">
@@ -270,8 +328,43 @@ export default function LeavesPage() {
                   <TableCell className="text-muted-foreground">
                     {format(new Date(leave.createdAt), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">&rarr;</span>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="ghost" size="icon-sm" />
+                        }
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() => router.push(`/leaves/${leave.id}`)}
+                        >
+                          <Eye className="size-4" />
+                          {t("common.viewDetails")}
+                        </DropdownMenuItem>
+                        {leave.status === "APPROVED" && (scope === "own" || leave.employee?.id === userId) && (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={(e) => openCancelDialog(leave, e as unknown as React.MouseEvent)}
+                          >
+                            <X className="size-4" />
+                            {t("leaveDetail.requestCancel")}
+                          </DropdownMenuItem>
+                        )}
+                        {(leave.status === "PENDING_MANAGER" || leave.status === "PENDING_HEAD") &&
+                         (scope === "own" || leave.employee?.id === userId) && (
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={(e) => openCancelDialog(leave, e as unknown as React.MouseEvent)}
+                          >
+                            <X className="size-4" />
+                            {t("leaveDetail.cancelRequest")}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -279,6 +372,36 @@ export default function LeavesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {cancelTarget?.status === "APPROVED"
+                ? t("leaveDetail.cancelDialogTitleRequest")
+                : t("leaveDetail.cancelDialogTitleCancel")}
+            </DialogTitle>
+            <DialogDescription>
+              {cancelTarget?.status === "APPROVED"
+                ? t("leaveDetail.cancelDialogDescRequest")
+                : t("leaveDetail.cancelDialogDescCancel")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              {t("common.goBack")}
+            </DialogClose>
+            <Button
+              variant="destructive"
+              disabled={submitting}
+              onClick={handleRequestCancel}
+            >
+              {t("common.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
