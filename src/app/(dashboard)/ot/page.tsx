@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Plus, CalendarIcon, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,7 +194,7 @@ export default function OTPage() {
     try {
       // Send date as YYYY-MM-DD to avoid timezone shift
       const dateStr = `${formDate.getFullYear()}-${String(formDate.getMonth() + 1).padStart(2, "0")}-${String(formDate.getDate()).padStart(2, "0")}`;
-      const res = await fetch("/api/ot", {
+      const res = await fetchWithRetry("/api/ot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -216,7 +217,7 @@ export default function OTPage() {
         toast.error(data.error || t("ot.errCreateFailed"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -225,7 +226,7 @@ export default function OTPage() {
   async function handleCancelOwn(recordId: string) {
     if (!confirm("Bạn có chắc muốn huỷ yêu cầu OT này?")) return;
     try {
-      const res = await fetch(`/api/ot/${recordId}`, { method: "DELETE" });
+      const res = await fetchWithRetry(`/api/ot/${recordId}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Đã huỷ yêu cầu");
         fetchRecords();
@@ -234,7 +235,7 @@ export default function OTPage() {
         toast.error(data.error || "Không huỷ được");
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
@@ -243,7 +244,7 @@ export default function OTPage() {
     action: "approve" | "reject"
   ) {
     try {
-      const res = await fetch(`/api/ot/${recordId}/${action}`, {
+      const res = await fetchWithRetry(`/api/ot/${recordId}/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
@@ -261,7 +262,7 @@ export default function OTPage() {
         toast.error(data.error || t("ot.errActionFailed"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
