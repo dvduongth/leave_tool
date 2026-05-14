@@ -3,8 +3,10 @@ import {
   getDailyReport,
   getMonthlyDetailReport,
   getMonthlyReport,
+  getSummaryReport,
   getVisibleEmployeeIds,
   getWeeklyReport,
+  type PeriodType,
 } from "@/lib/reports";
 import { logAudit, getRequestIp } from "@/lib/audit";
 
@@ -19,6 +21,7 @@ export async function GET(request: Request) {
     const type = searchParams.get("type") || "daily";
     const dateStr = searchParams.get("date");
     const departmentId = searchParams.get("departmentId");
+    const period = searchParams.get("period") as PeriodType | null;
 
     const queryDate = dateStr ? new Date(dateStr) : new Date();
     queryDate.setHours(0, 0, 0, 0);
@@ -29,7 +32,9 @@ export async function GET(request: Request) {
       : {};
 
     let payload: unknown;
-    if (type === "daily") {
+    if (type === "summary" && period) {
+      payload = await getSummaryReport(queryDate, period, employeeFilter);
+    } else if (type === "daily") {
       payload = await getDailyReport(queryDate, employeeFilter);
     } else if (type === "weekly") {
       payload = await getWeeklyReport(queryDate, employeeFilter);

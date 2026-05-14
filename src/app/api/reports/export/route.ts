@@ -4,12 +4,15 @@ import {
   DailyReport,
   MonthlyDetailReport,
   MonthlyReport,
+  SummaryReport,
   WeeklyReport,
   getDailyReport,
   getMonthlyDetailReport,
   getMonthlyReport,
+  getSummaryReport,
   getVisibleEmployeeIds,
   getWeeklyReport,
+  type PeriodType,
 } from "@/lib/reports";
 import { messages, translate, type Messages } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/i18n/server";
@@ -210,10 +213,49 @@ function buildMonthlyDetailCsv(d: MonthlyDetailReport, t: T): string {
   return lines.join("\r\n");
 }
 
+function buildSummaryCsv(d: SummaryReport, t: T): string {
+  const lines: string[] = [];
+  const periodLabel = { day: "Ngày", week: "Tuần", month: "Tháng", year: "Năm" }[d.period];
+  lines.push(csvRow(["Báo cáo tổng hợp", periodLabel]));
+  lines.push(csvRow(["Từ", d.periodStart.slice(0, 10), "Đến", d.periodEnd.slice(0, 10)]));
+  lines.push("");
+  lines.push(csvRow([t("reports.csvSummary")]));
+  lines.push(csvRow(["Tổng nghỉ phép (h)", d.totals.leaveHours]));
+  lines.push(csvRow(["Tổng OT (phút)", d.totals.otMinutes]));
+  lines.push(csvRow(["Tổng nghỉ kinh nguyệt (ngày)", d.totals.menstrualDays]));
+  lines.push("");
+  lines.push(csvRow(["Chi tiết theo nhân viên"]));
+  lines.push(
+    csvRow([
+      t("reports.colEmployee"),
+      t("reports.colLeaveHours"),
+      "OT (phút)",
+      "Nghỉ KN (ngày)",
+      "Nghỉ KN (phút)",
+    ])
+  );
+  for (const e of d.employees) {
+    lines.push(
+      csvRow([e.name, e.leaveHours, e.otMinutes, e.menstrualDays, e.menstrualMinutes])
+    );
+  }
+  lines.push(
+    csvRow([
+      t("reports.csvSummary"),
+      d.totals.leaveHours,
+      d.totals.otMinutes,
+      d.totals.menstrualDays,
+      d.employees.reduce((s, e) => s + e.menstrualMinutes, 0),
+    ])
+  );
+  return lines.join("\r\n");
+}
+
 function buildCsv(report: AnyReport, t: T): string {
   if (report.type === "daily") return buildDailyCsv(report, t);
   if (report.type === "weekly") return buildWeeklyCsv(report, t);
   if (report.type === "monthly-detail") return buildMonthlyDetailCsv(report, t);
+  if (report.type === "summary") return buildSummaryCsv(report, t);
   return buildMonthlyCsv(report, t);
 }
 
@@ -268,8 +310,12 @@ export async function GET(request: Request) {
       ? { employeeId: { in: employeeIds } }
       : {};
 
+    const period = searchParams.get("period") as PeriodType | null;
+
     let report: AnyReport;
-    if (type === "daily") {
+    if (type === "summary" && period) {
+      report = await getSummaryReport(queryDate, period, employeeFilter);
+    } else if (type === "daily") {
       report = await getDailyReport(queryDate, employeeFilter);
     } else if (type === "weekly") {
       report = await getWeeklyReport(queryDate, employeeFilter);

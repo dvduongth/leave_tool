@@ -22,6 +22,36 @@ export function getMonthBounds(date: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+export function getDayBounds(date: Date): { start: Date; end: Date } {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+export function getYearBounds(date: Date): { start: Date; end: Date } {
+  const start = new Date(date.getFullYear(), 0, 1);
+  const end = new Date(date.getFullYear(), 11, 31);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+export type PeriodType = "day" | "week" | "month" | "year";
+
+export function getPeriodBounds(date: Date, period: PeriodType): { start: Date; end: Date } {
+  switch (period) {
+    case "day":
+      return getDayBounds(date);
+    case "week":
+      return getWeekBounds(date);
+    case "month":
+      return getMonthBounds(date);
+    case "year":
+      return getYearBounds(date);
+  }
+}
+
 export async function getVisibleEmployeeIds(
   user: { id: string; role: Role; departmentId: string },
   departmentId?: string | null
@@ -535,8 +565,114 @@ export async function getMonthlyDetailReport(
   };
 }
 
+export async function getSummaryReport(
+  date: Date,
+  period: PeriodType,
+  employeeFilter: Record<string, unknown>
+) {
+  const bounds = getPeriodBounds(date, period);
+
+  const employees = await prisma.employee.findMany({
+    where: employeeFilter.employeeId
+      ? { id: employeeFilter.employeeId as { in: string[] } }
+      : {},
+    select: { id: true, name: true, joinDate: true },
+    orderBy: { joinDate: { sort: "asc", nulls: "last" } },
+  });
+
+  const empIds = employees.map((e) => e.id);
+
+  const [leaves, otRecords, menstrualLeaves] = await Promise.all([
+    prisma.leaveRequest.findMany({
+      where: {
+        employeeId: { in: empIds },
+        status: LeaveStatus.APPROVED,
+        startDate: { lte: bounds.end },
+        endDate: { gte: bounds.start },
+      },
+      select: { employeeId: true, totalHours: true },
+    }),
+    prisma.oTRecord.findMany({
+      where: {
+        employeeId: { in: empIds },
+        date: { gte: bounds.start, lte: bounds.end },
+        status: "APPROVED",
+      },
+      select: { employeeId: true, otMinutes: true },
+    }),
+    prisma.menstrualLeave.findMany({
+      where: {
+        employeeId: { in: empIds },
+        date: { gte: bounds.start, lte: bounds.end },
+      },
+      select: { employeeId: true, startTime: true, endTime: true },
+    }),
+  ]);
+
+  const empMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      leaveHours: number;
+      otMinutes: number;
+      menstrualDays: number;
+      menstrualMinutes: number;
+    }
+  >();
+
+  for (const emp of employees) {
+    empMap.set(emp.id, {
+      id: emp.id,
+      name: emp.name,
+      leaveHours: 0,
+      otMinutes: 0,
+      menstrualDays: 0,
+      menstrualMinutes: 0,
+    });
+  }
+
+  for (const l of leaves) {
+    const entry = empMap.get(l.employeeId);
+    if (entry) entry.leaveHours += l.totalHours;
+  }
+
+  for (const r of otRecords) {
+    const entry = empMap.get(r.employeeId);
+    if (entry) entry.otMinutes += r.otMinutes;
+  }
+
+  for (const m of menstrualLeaves) {
+    const entry = empMap.get(m.employeeId);
+    if (entry) {
+      entry.menstrualDays += 1;
+      const [sh, sm] = m.startTime.split(":").map(Number);
+      const [eh, em] = m.endTime.split(":").map(Number);
+      entry.menstrualMinutes += (eh * 60 + em) - (sh * 60 + sm);
+    }
+  }
+
+  const employeeList = Array.from(empMap.values());
+
+  const totals = {
+    leaveHours: employeeList.reduce((s, e) => s + e.leaveHours, 0),
+    otMinutes: employeeList.reduce((s, e) => s + e.otMinutes, 0),
+    menstrualDays: employeeList.reduce((s, e) => s + e.menstrualDays, 0),
+  };
+
+  return {
+    type: "summary" as const,
+    period,
+    periodStart: bounds.start.toISOString(),
+    periodEnd: bounds.end.toISOString(),
+    employees: employeeList,
+    totals,
+  };
+}
+
 export type DailyReport = Awaited<ReturnType<typeof getDailyReport>>;
 export type WeeklyReport = Awaited<ReturnType<typeof getWeeklyReport>>;
 export type MonthlyReport = Awaited<ReturnType<typeof getMonthlyReport>>;
 export type MonthlyDetailReport = Awaited<ReturnType<typeof getMonthlyDetailReport>>;
-export type AnyReport = DailyReport | WeeklyReport | MonthlyReport | MonthlyDetailReport;
+export type SummaryReport = Awaited<ReturnType<typeof getSummaryReport>>;
+export type AnyReport = DailyReport | WeeklyReport | MonthlyReport | MonthlyDetailReport | SummaryReport;
