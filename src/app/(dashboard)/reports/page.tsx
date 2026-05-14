@@ -183,6 +183,13 @@ export default function ReportsPage() {
     fetchReport();
   }, [fetchReport]);
 
+  const reportTypeToIndex: Record<ReportType, number> = {
+    daily: 0,
+    weekly: 1,
+    monthly: 2,
+    "monthly-detail": 3,
+  };
+
   const handleTabChange = (value: unknown) => {
     const types: ReportType[] = ["daily", "weekly", "monthly", "monthly-detail"];
     if (typeof value === "number" && value >= 0 && value < types.length) {
@@ -275,36 +282,47 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Quick date filters */}
+        {/* Quick date filters - synced with report type */}
         <div className="flex gap-1">
           <Button
-            variant="outline"
+            variant={reportType === "daily" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedDate(new Date())}
-            className={format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? "bg-primary/10" : ""}
+            onClick={() => {
+              setSelectedDate(new Date());
+              setReportType("daily");
+            }}
           >
             Hôm nay
           </Button>
           <Button
-            variant="outline"
+            variant={reportType === "weekly" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedDate(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+            onClick={() => {
+              setSelectedDate(new Date());
+              setReportType("weekly");
+            }}
           >
             Tuần này
           </Button>
           <Button
-            variant="outline"
+            variant={reportType === "monthly" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedDate(startOfMonth(new Date()))}
+            onClick={() => {
+              setSelectedDate(new Date());
+              setReportType("monthly");
+            }}
           >
             Tháng này
           </Button>
           <Button
-            variant="outline"
+            variant={reportType === "monthly-detail" ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedDate(startOfYear(new Date()))}
+            onClick={() => {
+              setSelectedDate(new Date());
+              setReportType("monthly-detail");
+            }}
           >
-            Năm này
+            Chi tiết tháng
           </Button>
         </div>
 
@@ -364,7 +382,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={0} onValueChange={handleTabChange}>
+      <Tabs value={reportTypeToIndex[reportType]} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value={0}>{t("reports.tabDaily")}</TabsTrigger>
           <TabsTrigger value={1}>{t("reports.tabWeekly")}</TabsTrigger>
