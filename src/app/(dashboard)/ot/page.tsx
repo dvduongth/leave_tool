@@ -164,11 +164,11 @@ export default function OTPage() {
     (r) => !r.employee || r.employee.id === userId
   );
   const isAdmin = role === "ADMIN";
-  const pendingTeamRecords = records.filter(
-    (r) =>
-      r.status === "PENDING" &&
-      r.employee &&
-      (isAdmin || r.employee.id !== userId)
+  const teamRecords = records.filter(
+    (r) => r.employee && r.employee.id !== userId
+  );
+  const pendingTeamRecords = teamRecords.filter(
+    (r) => r.status === "PENDING"
   );
 
   const totalMinutes = myRecords.reduce((sum, r) => sum + r.otMinutes, 0);
@@ -358,12 +358,17 @@ export default function OTPage() {
         <TabsList>
           <TabsTrigger value="mine">{t("ot.tabMine")}</TabsTrigger>
           {isApprover && (
-            <TabsTrigger value="pending">
-              {t("ot.tabPending").replace(
-                "{count}",
-                String(pendingTeamRecords.length)
-              )}
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="pending">
+                {t("ot.tabPending").replace(
+                  "{count}",
+                  String(pendingTeamRecords.length)
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="team">
+                Team ({teamRecords.length})
+              </TabsTrigger>
+            </>
           )}
         </TabsList>
 
@@ -442,6 +447,7 @@ export default function OTPage() {
         </TabsContent>
 
         {isApprover && (
+          <>
           <TabsContent value="pending">
             <div className="rounded-lg border">
               <Table>
@@ -514,6 +520,63 @@ export default function OTPage() {
               </Table>
             </div>
           </TabsContent>
+
+          <TabsContent value="team">
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("ot.colEmployee")}</TableHead>
+                    <TableHead>{t("ot.colDate")}</TableHead>
+                    <TableHead>{t("ot.colOtStart")}</TableHead>
+                    <TableHead>{t("ot.colOtEnd")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("ot.colMinutes")}
+                    </TableHead>
+                    <TableHead>{t("ot.colStatus")}</TableHead>
+                    <TableHead>{t("ot.colNote")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teamRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        Không có dữ liệu OT của team
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    teamRecords.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-medium">
+                          {record.employee?.name ?? "-"}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(record.date), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>{record.otStart}</TableCell>
+                        <TableCell>{record.otEnd}</TableCell>
+                        <TableCell className="text-right">
+                          {record.otMinutes}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusVariant(record.status)}>
+                            {t(`common.status.${record.status}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[150px] truncate">
+                          {record.note || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+          </>
         )}
       </Tabs>
 

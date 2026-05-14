@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { format, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, startOfYear } from "date-fns";
 import { CalendarIcon, DownloadIcon } from "lucide-react";
 import {
   BarChart,
@@ -275,6 +275,39 @@ export default function ReportsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Quick date filters */}
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDate(new Date())}
+            className={format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? "bg-primary/10" : ""}
+          >
+            Hôm nay
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDate(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+          >
+            Tuần này
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDate(startOfMonth(new Date()))}
+          >
+            Tháng này
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedDate(startOfYear(new Date()))}
+          >
+            Năm này
+          </Button>
+        </div>
+
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger className="inline-flex h-8 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm text-muted-foreground hover:bg-muted">
             <CalendarIcon className="size-4" />

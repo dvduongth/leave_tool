@@ -252,6 +252,55 @@ export async function PATCH(
   }
 }
 
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const leave = await prisma.leaveRequest.findUnique({
+      where: { id },
+    });
+
+    if (!leave) {
+      return Response.json({ error: "Leave request not found" }, { status: 404 });
+    }
+
+    // Only owner can delete
+    if (leave.employeeId !== user.id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Can only delete DRAFT requests
+    if (leave.status !== LeaveStatus.DRAFT) {
+      return Response.json(
+        { error: "Chỉ có thể xóa đơn nháp (DRAFT)" },
+        { status: 400 }
+      );
+    }
+
+    // Delete history first (foreign key constraint)
+    await prisma.leaveRequestHistory.deleteMany({
+      where: { requestId: id },
+    });
+
+    await prisma.leaveRequest.delete({
+      where: { id },
+    });
+
+    return Response.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
 function canViewLeave(
   user: { id: string; role: Role; departmentId: string },
   leave: {

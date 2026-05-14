@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth-utils";
 import { createNotification } from "@/lib/notifications";
 import { Role, ShiftType } from "@/generated/prisma";
 
-const VALID_SHIFTS: ShiftType[] = ["A", "B", "C"];
+const VALID_SHIFTS: ShiftType[] = ["A", "B", "C", "D"];
 
 function validateWeeklyShifts(input: unknown): Record<number, ShiftType> | null {
   if (!input || typeof input !== "object") return null;
