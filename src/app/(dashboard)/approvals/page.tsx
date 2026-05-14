@@ -27,6 +27,7 @@ import {
 import { LeaveStatusBadge } from "@/components/leaves/leave-status-badge";
 import { Separator } from "@/components/ui/separator";
 import { useT } from "@/lib/i18n/provider";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import type { LeaveStatus, RecordStatus } from "@/generated/prisma";
 
 interface PendingLeave {
@@ -121,7 +122,7 @@ export default function ApprovalsPage() {
   async function handleApprove(leaveId: string) {
     setProcessingId(leaveId);
     try {
-      const res = await fetch(`/api/leaves/${leaveId}/approve`, {
+      const res = await fetchWithRetry(`/api/leaves/${leaveId}/approve`, {
         method: "POST",
       });
       if (!res.ok) {
@@ -131,6 +132,8 @@ export default function ApprovalsPage() {
       }
       toast.success(t("approvals.toastApproved"));
       setLeaves((prev) => prev.filter((l) => l.id !== leaveId));
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setProcessingId(null);
     }
@@ -139,7 +142,7 @@ export default function ApprovalsPage() {
   async function handleApproveCancel(leaveId: string) {
     setProcessingId(leaveId);
     try {
-      const res = await fetch(`/api/leaves/${leaveId}/approve-cancel`, {
+      const res = await fetchWithRetry(`/api/leaves/${leaveId}/approve-cancel`, {
         method: "POST",
       });
       if (!res.ok) {
@@ -149,6 +152,8 @@ export default function ApprovalsPage() {
       }
       toast.success(t("approvals.toastCancelApproved"));
       setCancelRequests((prev) => prev.filter((l) => l.id !== leaveId));
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setProcessingId(null);
     }
@@ -157,7 +162,7 @@ export default function ApprovalsPage() {
   async function handleApproveOtCancel(otId: string) {
     setProcessingId(otId);
     try {
-      const res = await fetch(`/api/ot/${otId}/approve-cancel`, {
+      const res = await fetchWithRetry(`/api/ot/${otId}/approve-cancel`, {
         method: "POST",
       });
       if (!res.ok) {
@@ -167,6 +172,8 @@ export default function ApprovalsPage() {
       }
       toast.success(t("approvals.toastOtCancelApproved"));
       setOtCancelRequests((prev) => prev.filter((o) => o.id !== otId));
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setProcessingId(null);
     }
@@ -175,7 +182,7 @@ export default function ApprovalsPage() {
   async function handleApproveMenstrual(id: string) {
     setProcessingId(id);
     try {
-      const res = await fetch(`/api/menstrual-leave/${id}/approve`, {
+      const res = await fetchWithRetry(`/api/menstrual-leave/${id}/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "approve" }),
@@ -187,6 +194,8 @@ export default function ApprovalsPage() {
       }
       toast.success(t("approvals.toastApproved"));
       setMenstrualRequests((prev) => prev.filter((m) => m.id !== id));
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setProcessingId(null);
     }
@@ -225,7 +234,7 @@ export default function ApprovalsPage() {
         ? { action: "reject", reason: rejectComment }
         : { comment: rejectComment };
 
-      const res = await fetch(endpoint, {
+      const res = await fetchWithRetry(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -251,6 +260,8 @@ export default function ApprovalsPage() {
       }
       setRejectDialogOpen(false);
       setRejectTargetId(null);
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setProcessingId(null);
     }

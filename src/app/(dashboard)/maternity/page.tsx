@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Plus, CalendarIcon, CheckCircle, XCircle, Baby, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -129,7 +130,7 @@ export default function MaternityPage() {
     setSubmitting(true);
     try {
       const dateStr = `${childBirth.getFullYear()}-${String(childBirth.getMonth() + 1).padStart(2, "0")}-${String(childBirth.getDate()).padStart(2, "0")}`;
-      const res = await fetch("/api/maternity/child", {
+      const res = await fetchWithRetry("/api/maternity/child", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ birthDate: dateStr, name: childName || null, note: childNote.trim() }),
@@ -145,6 +146,8 @@ export default function MaternityPage() {
         const d = await res.json();
         toast.error(d.error || "Khai báo thất bại");
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -162,7 +165,7 @@ export default function MaternityPage() {
     setSubmitting(true);
     try {
       const dateStr = `${leaveDate.getFullYear()}-${String(leaveDate.getMonth() + 1).padStart(2, "0")}-${String(leaveDate.getDate()).padStart(2, "0")}`;
-      const res = await fetch("/api/maternity-leave", {
+      const res = await fetchWithRetry("/api/maternity-leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,62 +186,80 @@ export default function MaternityPage() {
         const d = await res.json();
         toast.error(d.error || "Đăng ký thất bại");
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
   }
 
   async function approveChild(id: string, action: "approve" | "reject") {
-    const res = await fetch(`/api/maternity/child/${id}/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
-    });
-    if (res.ok) {
-      toast.success(action === "approve" ? "Đã duyệt khai báo" : "Đã từ chối");
-      fetchAll();
-    } else {
-      const d = await res.json();
-      toast.error(d.error || "Thất bại");
+    try {
+      const res = await fetchWithRetry(`/api/maternity/child/${id}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
+      });
+      if (res.ok) {
+        toast.success(action === "approve" ? "Đã duyệt khai báo" : "Đã từ chối");
+        fetchAll();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Thất bại");
+      }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
   async function approveLeave(id: string, action: "approve" | "reject") {
-    const res = await fetch(`/api/maternity-leave/${id}/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
-    });
-    if (res.ok) {
-      toast.success(action === "approve" ? "Đã duyệt" : "Đã từ chối");
-      fetchAll();
-    } else {
-      const d = await res.json();
-      toast.error(d.error || "Thất bại");
+    try {
+      const res = await fetchWithRetry(`/api/maternity-leave/${id}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
+      });
+      if (res.ok) {
+        toast.success(action === "approve" ? "Đã duyệt" : "Đã từ chối");
+        fetchAll();
+      } else {
+        const d = await res.json();
+        toast.error(d.error || "Thất bại");
+      }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
   async function cancelChild(id: string) {
     if (!confirm("Bạn có chắc muốn huỷ khai báo này?")) return;
-    const res = await fetch(`/api/maternity/child/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("Đã huỷ khai báo");
-      fetchAll();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      toast.error(d.error || "Không huỷ được");
+    try {
+      const res = await fetchWithRetry(`/api/maternity/child/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã huỷ khai báo");
+        fetchAll();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error || "Không huỷ được");
+      }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
   async function cancelLeave(id: string) {
     if (!confirm("Bạn có chắc muốn huỷ đăng ký này?")) return;
-    const res = await fetch(`/api/maternity-leave/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("Đã huỷ đăng ký");
-      fetchAll();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      toast.error(d.error || "Không huỷ được");
+    try {
+      const res = await fetchWithRetry(`/api/maternity-leave/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Đã huỷ đăng ký");
+        fetchAll();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        toast.error(d.error || "Không huỷ được");
+      }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 

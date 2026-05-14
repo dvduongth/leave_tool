@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { format } from "date-fns";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { CalendarIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,7 @@ export default function NewLeavePage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/leaves", {
+      const res = await fetchWithRetry("/api/leaves", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function NewLeavePage() {
       const created = await res.json();
 
       if (submitAfter) {
-        const submitRes = await fetch(`/api/leaves/${created.id}/submit`, {
+        const submitRes = await fetchWithRetry(`/api/leaves/${created.id}/submit`, {
           method: "POST",
         });
         if (!submitRes.ok) {
@@ -178,6 +179,8 @@ export default function NewLeavePage() {
       }
 
       router.push("/leaves");
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }

@@ -27,6 +27,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useT } from "@/lib/i18n/provider";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface FridayOverride {
   id: string;
@@ -88,7 +89,7 @@ export default function AdminFridayOverridePage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/friday-override", {
+      const res = await fetchWithRetry("/api/friday-override", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -109,7 +110,7 @@ export default function AdminFridayOverridePage() {
         toast.error(data.error || t("admin.fridayOverride.errCreate"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +118,7 @@ export default function AdminFridayOverridePage() {
 
   async function handleDelete(id: string) {
     try {
-      const res = await fetch(`/api/friday-override/${id}`, {
+      const res = await fetchWithRetry(`/api/friday-override/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -129,7 +130,7 @@ export default function AdminFridayOverridePage() {
         toast.error(data.error || t("admin.fridayOverride.errDelete"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 

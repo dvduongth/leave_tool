@@ -34,6 +34,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useT } from "@/lib/i18n/provider";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface Holiday {
   id: string;
@@ -88,7 +89,7 @@ export default function AdminHolidaysPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/admin/holidays", {
+      const res = await fetchWithRetry("/api/admin/holidays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,7 +114,7 @@ export default function AdminHolidaysPage() {
         toast.error(data.error || t("admin.holidays.errCreate"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +122,7 @@ export default function AdminHolidaysPage() {
 
   async function handleDelete(id: string) {
     try {
-      const res = await fetch(`/api/admin/holidays?id=${id}`, {
+      const res = await fetchWithRetry(`/api/admin/holidays?id=${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -133,7 +134,7 @@ export default function AdminHolidaysPage() {
         toast.error(data.error || t("admin.holidays.errDelete"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 

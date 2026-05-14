@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Mail, User, Lock, Eye, EyeOff } from "lucide-react";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export default function SettingsPage() {
   async function saveProfile() {
     setSavingProfile(true);
     try {
-      const res = await fetch("/api/user/me", {
+      const res = await fetchWithRetry("/api/user/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone: phone || null, gender, preferredLocale: locale }),
@@ -96,6 +97,8 @@ export default function SettingsPage() {
         const d = await res.json();
         toast.error(d.error || "Cập nhật thất bại");
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSavingProfile(false);
     }
@@ -108,7 +111,7 @@ export default function SettingsPage() {
     }
     setSavingPwd(true);
     try {
-      const res = await fetch("/api/user/change-password", {
+      const res = await fetchWithRetry("/api/user/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: currentPwd, newPassword: newPwd }),
@@ -123,6 +126,8 @@ export default function SettingsPage() {
         const d = await res.json();
         toast.error(d.error || "Đổi mật khẩu thất bại");
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSavingPwd(false);
     }
@@ -131,7 +136,7 @@ export default function SettingsPage() {
   async function toggleNotif(next: boolean) {
     setSavingNotif(true);
     try {
-      const res = await fetch("/api/user/email-notif", {
+      const res = await fetchWithRetry("/api/user/email-notif", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: next }),
@@ -143,7 +148,7 @@ export default function SettingsPage() {
         toast.error(t("settings.saveFailedToast"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSavingNotif(false);
     }

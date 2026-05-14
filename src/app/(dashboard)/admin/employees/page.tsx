@@ -36,6 +36,7 @@ import {
   calculateSeniorityBonusHours,
   yearsBetween,
 } from "@/lib/seniority";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface Employee {
   id: string;
@@ -191,7 +192,7 @@ export default function AdminEmployeesPage() {
         };
         if (formPassword) body.password = formPassword;
 
-        const res = await fetch(
+        const res = await fetchWithRetry(
           `/api/admin/employees/${editingEmployee.id}`,
           {
             method: "PATCH",
@@ -220,7 +221,7 @@ export default function AdminEmployeesPage() {
           return;
         }
 
-        const res = await fetch("/api/admin/employees", {
+        const res = await fetchWithRetry("/api/admin/employees", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -245,7 +246,7 @@ export default function AdminEmployeesPage() {
         }
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -264,7 +265,7 @@ export default function AdminEmployeesPage() {
 
     setTogglingActive(true);
     try {
-      const res = await fetch(`/api/admin/employees/${editingEmployee.id}`, {
+      const res = await fetchWithRetry(`/api/admin/employees/${editingEmployee.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: nextActive }),
@@ -284,7 +285,7 @@ export default function AdminEmployeesPage() {
         toast.error(data.error || t("admin.employees.errUpdate"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setTogglingActive(false);
     }
@@ -299,7 +300,7 @@ export default function AdminEmployeesPage() {
 
     setDeleting(true);
     try {
-      const res = await fetch(`/api/admin/employees/${editingEmployee.id}`, {
+      const res = await fetchWithRetry(`/api/admin/employees/${editingEmployee.id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -311,7 +312,7 @@ export default function AdminEmployeesPage() {
         toast.error(data.error || t("admin.employees.errDelete"));
       }
     } catch {
-      toast.error(t("admin.employees.errDeleteGeneric"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setDeleting(false);
     }

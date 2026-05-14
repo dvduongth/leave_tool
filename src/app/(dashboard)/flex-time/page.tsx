@@ -49,6 +49,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { useT } from "@/lib/i18n/provider";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface FlexRecord {
   id: string;
@@ -192,7 +193,7 @@ export default function FlexTimePage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/flex-time", {
+      const res = await fetchWithRetry("/api/flex-time", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -218,7 +219,7 @@ export default function FlexTimePage() {
         toast.error(data.error || t("flex.errCreate"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -226,7 +227,7 @@ export default function FlexTimePage() {
 
   async function handleApproval(recordId: string, action: "APPROVED" | "REJECTED") {
     try {
-      const res = await fetch("/api/flex-time/approve", {
+      const res = await fetchWithRetry("/api/flex-time/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recordId, action }),
@@ -240,14 +241,14 @@ export default function FlexTimePage() {
         toast.error(data.error || t("flex.errApprove"));
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
   async function handleCancelOwn(recordId: string) {
     if (!confirm("Bạn có chắc muốn huỷ yêu cầu Flex Time này?")) return;
     try {
-      const res = await fetch(`/api/flex-time/${recordId}`, { method: "DELETE" });
+      const res = await fetchWithRetry(`/api/flex-time/${recordId}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Đã huỷ yêu cầu");
         fetchData();
@@ -256,7 +257,7 @@ export default function FlexTimePage() {
         toast.error(data.error || "Không huỷ được");
       }
     } catch {
-      toast.error(t("common.unexpectedError"));
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/lib/i18n/provider";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface ConfigRow {
   key: string;
@@ -57,7 +58,7 @@ export default function AdminSettingsPage() {
   async function save(key: string) {
     setSaving(key);
     try {
-      const res = await fetch("/api/admin/config", {
+      const res = await fetchWithRetry("/api/admin/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, value: drafts[key] }),
@@ -69,6 +70,8 @@ export default function AdminSettingsPage() {
         const data = await res.json();
         toast.error(data.error || t("adminSettings.saveFailedToast"));
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSaving(null);
     }

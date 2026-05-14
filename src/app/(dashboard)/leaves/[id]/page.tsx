@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import {
   ArrowLeft,
   CalendarIcon,
@@ -170,7 +171,7 @@ export default function LeaveDetailPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/leaves/${id}`, {
+      const res = await fetchWithRetry(`/api/leaves/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,6 +190,8 @@ export default function LeaveDetailPage() {
       toast.success(t("leaveDetail.toastUpdated"));
       setEditing(false);
       fetchLeave();
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -197,7 +200,7 @@ export default function LeaveDetailPage() {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/leaves/${id}/submit`, { method: "POST" });
+      const res = await fetchWithRetry(`/api/leaves/${id}/submit`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || t("leaveDetail.errSubmit"));
@@ -205,6 +208,8 @@ export default function LeaveDetailPage() {
       }
       toast.success(t("leaveDetail.toastSubmitted"));
       fetchLeave();
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -213,7 +218,7 @@ export default function LeaveDetailPage() {
   async function handleDelete() {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/leaves/${id}`, { method: "DELETE" });
+      const res = await fetchWithRetry(`/api/leaves/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || t("leaveDetail.errDelete"));
@@ -221,6 +226,8 @@ export default function LeaveDetailPage() {
       }
       toast.success(t("leaveDetail.toastDeleted"));
       router.push("/leaves");
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +236,7 @@ export default function LeaveDetailPage() {
   async function handleCancel() {
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/leaves/${id}/cancel`, { method: "POST" });
+      const res = await fetchWithRetry(`/api/leaves/${id}/cancel`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         toast.error(err.error || t("leaveDetail.errCancel"));
@@ -238,6 +245,8 @@ export default function LeaveDetailPage() {
       toast.success(t("leaveDetail.toastCancelSubmitted"));
       setCancelDialogOpen(false);
       fetchLeave();
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -250,7 +259,7 @@ export default function LeaveDetailPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/leaves/${id}`, {
+      const res = await fetchWithRetry(`/api/leaves/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -267,7 +276,7 @@ export default function LeaveDetailPage() {
         return;
       }
 
-      const submitRes = await fetch(`/api/leaves/${id}/submit`, {
+      const submitRes = await fetchWithRetry(`/api/leaves/${id}/submit`, {
         method: "POST",
       });
       if (!submitRes.ok) {
@@ -280,6 +289,8 @@ export default function LeaveDetailPage() {
       toast.success(t("leaveDetail.toastUpdatedResubmitted"));
       setEditing(false);
       fetchLeave();
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }

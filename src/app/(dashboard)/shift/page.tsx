@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { CalendarIcon, CheckCircle, XCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -134,7 +135,7 @@ export default function ShiftPage() {
     setSubmitting(true);
     try {
       const dateStr = `${formEffective.getFullYear()}-${String(formEffective.getMonth() + 1).padStart(2, "0")}-${String(formEffective.getDate()).padStart(2, "0")}`;
-      const res = await fetch("/api/shift/change-request", {
+      const res = await fetchWithRetry("/api/shift/change-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,6 +154,8 @@ export default function ShiftPage() {
         const data = await res.json();
         toast.error(data.error || "Gửi yêu cầu thất bại");
       }
+    } catch {
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +163,7 @@ export default function ShiftPage() {
 
   async function handleAction(reqId: string, action: "approve" | "reject") {
     try {
-      const res = await fetch(`/api/shift/change-request/${reqId}/${action}`, {
+      const res = await fetchWithRetry(`/api/shift/change-request/${reqId}/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: action === "reject" ? JSON.stringify({ comment: "" }) : undefined,
@@ -173,14 +176,14 @@ export default function ShiftPage() {
         toast.error(data.error || "Thao tác thất bại");
       }
     } catch {
-      toast.error("Lỗi không mong muốn");
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
   async function handleCancelOwn(reqId: string) {
     if (!confirm("Bạn có chắc muốn huỷ yêu cầu đổi ca này?")) return;
     try {
-      const res = await fetch(`/api/shift/change-request/${reqId}`, { method: "DELETE" });
+      const res = await fetchWithRetry(`/api/shift/change-request/${reqId}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Đã huỷ yêu cầu");
         fetchAll();
@@ -189,7 +192,7 @@ export default function ShiftPage() {
         toast.error(data.error || "Không huỷ được");
       }
     } catch {
-      toast.error("Lỗi không mong muốn");
+      toast.error("Kết nối thất bại sau 3 lần thử, vui lòng thử lại");
     }
   }
 
